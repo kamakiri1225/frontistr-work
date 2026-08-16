@@ -1,0 +1,12 @@
+# search word_1 directory path
+Word_1: NODE
+# search word_2 directory path
+Word_2: ELEMENT
+# search word_3 directory path
+Word_3: Fixed
+# search word_4 directory path
+Word_4: Force
+# search word_5 directory path (Foce_load)
+Word_5: Point_01
+# search word_6 directory path (F_L_Element)
+Word_6: Point_02
