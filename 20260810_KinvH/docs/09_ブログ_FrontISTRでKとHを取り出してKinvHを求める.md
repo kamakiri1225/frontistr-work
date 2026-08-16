@@ -66,9 +66,7 @@ $$
 これを最初の式に入れると、次のようになります。
 
 $$
-\boldsymbol K\boldsymbol u = \boldsymbol H\boldsymbol T
-\quad\Longrightarrow\quad
-\boldsymbol u = \boldsymbol K^{-1}\boldsymbol H\,\boldsymbol T
+\boldsymbol K\boldsymbol u = \boldsymbol H\boldsymbol T \quad\Longrightarrow\quad \boldsymbol u = \boldsymbol K^{-1}\boldsymbol H\,\boldsymbol T
 $$
 
 つまり $\boldsymbol K^{-1}\boldsymbol H$ は、**節点温度を入れると節点変位が返ってくる変換表**です。これがあれば、温度分布を変えるたびに解析し直さなくても、変位が掛け算だけで求められます。これがこの記事のゴールです。
@@ -109,11 +107,7 @@ $$
 まず温度ベクトル $\boldsymbol T$ は、425個の節点温度を上から順に並べただけの縦ベクトルです。
 
 $$
-\boldsymbol T =
-\begin{bmatrix}
-T_1 \\ T_2 \\ T_3 \\ \vdots \\ T_{425}
-\end{bmatrix}
-\quad(425\times1)
+\boldsymbol T = \begin{bmatrix} T_1 \\ T_2 \\ T_3 \\ \vdots \\ T_{425} \end{bmatrix} \quad(425\times1)
 $$
 
 $T_j$ が節点 $j$ の温度です。
@@ -121,28 +115,7 @@ $T_j$ が節点 $j$ の温度です。
 一方 $\boldsymbol H$ は、行が自由度（節点×方向）、列が節点温度に対応する横長の行列です。行のラベルは「節点1のx, 節点1のy, 節点1のz, 節点2のx, …」、列のラベルは「$T_1, T_2, \dots, T_{425}$」です。
 
 $$
-\boldsymbol H =
-\begin{array}{c}
-\begin{array}{ccccc}
-\ \ T_1 & \ T_2 & \ T_3 & \cdots & T_{425}
-\end{array}\\[2pt]
-\begin{bmatrix}
-h_{1x,1} & h_{1x,2} & h_{1x,3} & \cdots & h_{1x,425} \\
-h_{1y,1} & h_{1y,2} & h_{1y,3} & \cdots & h_{1y,425} \\
-h_{1z,1} & h_{1z,2} & h_{1z,3} & \cdots & h_{1z,425} \\
-h_{2x,1} & h_{2x,2} & h_{2x,3} & \cdots & h_{2x,425} \\
-\vdots   & \vdots   & \vdots   & \ddots & \vdots     \\
-h_{425z,1} & h_{425z,2} & h_{425z,3} & \cdots & h_{425z,425}
-\end{bmatrix}
-\end{array}
-\begin{array}{l}
-\!\!\leftarrow 節点1のx \\
-\!\!\leftarrow 節点1のy \\
-\!\!\leftarrow 節点1のz \\
-\!\!\leftarrow 節点2のx \\
-\ \ \vdots \\
-\!\!\leftarrow 節点425のz
-\end{array}
+\boldsymbol H = \begin{array}{c} \begin{array}{ccccc} \ \ T_1 & \ T_2 & \ T_3 & \cdots & T_{425} \end{array}\\[2pt] \begin{bmatrix} h_{1x,1} & h_{1x,2} & h_{1x,3} & \cdots & h_{1x,425} \\ h_{1y,1} & h_{1y,2} & h_{1y,3} & \cdots & h_{1y,425} \\ h_{1z,1} & h_{1z,2} & h_{1z,3} & \cdots & h_{1z,425} \\ h_{2x,1} & h_{2x,2} & h_{2x,3} & \cdots & h_{2x,425} \\ \vdots   & \vdots   & \vdots   & \ddots & \vdots     \\ h_{425z,1} & h_{425z,2} & h_{425z,3} & \cdots & h_{425z,425} \end{bmatrix} \end{array} \begin{array}{l} \!\!\leftarrow 節点1のx \\ \!\!\leftarrow 節点1のy \\ \!\!\leftarrow 節点1のz \\ \!\!\leftarrow 節点2のx \\ \ \ \vdots \\ \!\!\leftarrow 節点425のz \end{array}
 $$
 
 成分 $h_{2x,\,3}$ は「節点3の温度を1度上げたときに、節点2のx方向に生じる力」という意味です。掛け算 $\boldsymbol f=\boldsymbol H\boldsymbol T$ を成分で書くと、例えば節点2のx方向の力は次のように、全節点の温度の寄与を足し合わせたものになります。
@@ -462,10 +435,7 @@ $$
 $\boldsymbol H$ を列に分けて書きます。
 
 $$
-\boldsymbol H =
-\begin{bmatrix}
-\boldsymbol h_1 & \boldsymbol h_2 & \cdots & \boldsymbol h_{425}
-\end{bmatrix}
+\boldsymbol H = \begin{bmatrix} \boldsymbol h_1 & \boldsymbol h_2 & \cdots & \boldsymbol h_{425} \end{bmatrix}
 $$
 
 いま、節点 $j$ の温度だけを1、ほかの節点を全部0にした温度ベクトルを $\boldsymbol e_j$ とします。これを掛けると、$\boldsymbol H$ の第 $j$ 列だけが残ります。
@@ -532,9 +502,7 @@ cd /mnt/d/work/002_CAE/frontistr/work/20260810_KinvH/model/003_Htest
 なぜ右辺ベクトルが温度荷重になるのか、中身を少しだけ書いておきます。等方材料の熱ひずみは、線膨張係数 $\alpha$、温度変化 $T-T_0$ を使って次のように表せます。
 
 $$
-\boldsymbol\varepsilon_{\mathrm{thermal}}
-= \alpha(T-T_0)
-\begin{bmatrix} 1 & 1 & 1 & 0 & 0 & 0 \end{bmatrix}^{\mathsf T}
+\boldsymbol\varepsilon_{\mathrm{thermal}} = \alpha(T-T_0) \begin{bmatrix} 1 & 1 & 1 & 0 & 0 & 0 \end{bmatrix}^{\mathsf T}
 $$
 
 この6成分のベクトルは、ひずみの並び $[\varepsilon_{xx},\ \varepsilon_{yy},\ \varepsilon_{zz},\ \gamma_{xy},\ \gamma_{yz},\ \gamma_{zx}]$ に対応しています（前半3つが伸び縮み＝垂直ひずみ、後半3つがせん断ひずみ）。$[1\ 1\ 1\ 0\ 0\ 0]$ の意味は次のとおりです。
@@ -559,8 +527,7 @@ $$
 物体につり合う応力があるとき、内部の仮想仕事と外力の仮想仕事が等しくなります。仮想変位を $\delta\boldsymbol u$、それによる仮想ひずみを $\delta\boldsymbol\varepsilon$ とすると、
 
 $$
-\int_{V_e}\delta\boldsymbol\varepsilon^{\mathsf T}\boldsymbol\sigma\,\mathrm dV
-= \delta\boldsymbol u^{\mathsf T}\boldsymbol f
+\int_{V_e}\delta\boldsymbol\varepsilon^{\mathsf T}\boldsymbol\sigma\,\mathrm dV = \delta\boldsymbol u^{\mathsf T}\boldsymbol f
 $$
 
 **（3）FEMの関係を入れる**
@@ -568,16 +535,13 @@ $$
 有限要素では、ひずみは節点変位 $\boldsymbol u_e$ から $\boldsymbol\varepsilon=\boldsymbol B\boldsymbol u_e$ で作れます（$\delta\boldsymbol\varepsilon=\boldsymbol B\,\delta\boldsymbol u_e$）。これと（1）の応力を代入します。
 
 $$
-\int_{V_e}(\boldsymbol B\,\delta\boldsymbol u_e)^{\mathsf T}\boldsymbol D(\boldsymbol B\boldsymbol u_e - \boldsymbol\varepsilon_{\mathrm{thermal}})\,\mathrm dV
-= \delta\boldsymbol u_e^{\mathsf T}\boldsymbol f
+\int_{V_e}(\boldsymbol B\,\delta\boldsymbol u_e)^{\mathsf T}\boldsymbol D(\boldsymbol B\boldsymbol u_e - \boldsymbol\varepsilon_{\mathrm{thermal}})\,\mathrm dV = \delta\boldsymbol u_e^{\mathsf T}\boldsymbol f
 $$
 
 $\delta\boldsymbol u_e$ を外にくくり出して整理すると、
 
 $$
-\underbrace{\left(\int_{V_e}\boldsymbol B^{\mathsf T}\boldsymbol D\boldsymbol B\,\mathrm dV\right)}_{要素剛性 \boldsymbol K_e}\boldsymbol u_e
-- \int_{V_e}\boldsymbol B^{\mathsf T}\boldsymbol D\,\boldsymbol\varepsilon_{\mathrm{thermal}}\,\mathrm dV
-= \boldsymbol f
+\underbrace{\left(\int_{V_e}\boldsymbol B^{\mathsf T}\boldsymbol D\boldsymbol B\,\mathrm dV\right)}_{要素剛性 \boldsymbol K_e}\boldsymbol u_e - \int_{V_e}\boldsymbol B^{\mathsf T}\boldsymbol D\,\boldsymbol\varepsilon_{\mathrm{thermal}}\,\mathrm dV = \boldsymbol f
 $$
 
 **（4）熱ひずみの項を右辺に移す**
@@ -585,10 +549,7 @@ $$
 熱ひずみの項を右辺へ移すと、外力と同じ立場の「等価な節点荷重」として現れます。これが温度荷重です。
 
 $$
-\boldsymbol K_e\boldsymbol u_e = \boldsymbol f + \boldsymbol f_{\mathrm{thermal},e},
-\qquad
-\boldsymbol f_{\mathrm{thermal},e}
-= \int_{V_e} \boldsymbol B^{\mathsf T}\boldsymbol D\,\boldsymbol\varepsilon_{\mathrm{thermal}}\,\mathrm dV
+\boldsymbol K_e\boldsymbol u_e = \boldsymbol f + \boldsymbol f_{\mathrm{thermal},e}, \qquad \boldsymbol f_{\mathrm{thermal},e} = \int_{V_e} \boldsymbol B^{\mathsf T}\boldsymbol D\,\boldsymbol\varepsilon_{\mathrm{thermal}}\,\mathrm dV
 $$
 
 要するに「熱ひずみを $\boldsymbol B^{\mathsf T}\boldsymbol D$ で節点力に変換して体積で積分したもの」が温度荷重で、その正体は $\boldsymbol K\boldsymbol u=\boldsymbol f$ を熱ひずみ込みで組み立てたときに右辺へ回ってくる項、というわけです。
@@ -596,10 +557,7 @@ $$
 材料が温度に依存せず初期温度を0とすれば、節点温度 $\boldsymbol T_e$ を積分の外に出せて、次の形になります。
 
 $$
-\boldsymbol f_{\mathrm{thermal},e} = \boldsymbol H_e\boldsymbol T_e,
-\qquad
-\boldsymbol H_e = \int_{V_e} \boldsymbol B^{\mathsf T}\boldsymbol D\,
-\alpha\begin{bmatrix} 1 & 1 & 1 & 0 & 0 & 0 \end{bmatrix}^{\mathsf T}\boldsymbol N\,\mathrm dV
+\boldsymbol f_{\mathrm{thermal},e} = \boldsymbol H_e\boldsymbol T_e, \qquad \boldsymbol H_e = \int_{V_e} \boldsymbol B^{\mathsf T}\boldsymbol D\, \alpha\begin{bmatrix} 1 & 1 & 1 & 0 & 0 & 0 \end{bmatrix}^{\mathsf T}\boldsymbol N\,\mathrm dV
 $$
 
 FrontISTRはこの $\boldsymbol H_e$ を明示的には作らず、$\boldsymbol H_e\boldsymbol T_e$（＝要素の温度荷重ベクトル）を直接計算して全体の右辺に足しています。だから単位温度を与えると、その足された結果＝ $\boldsymbol H$ の1列がそのまま右辺に現れる、というわけです。
@@ -623,10 +581,7 @@ $$
 もしこの伸びが完全に押さえ込まれたら、材料には応力が生じます。等方材料で3方向とも同じだけ伸びを止めた場合、生じる熱応力は次の式になります（$E$＝ヤング率、$\nu$＝ポアソン比）。
 
 $$
-\sigma_{\mathrm{thermal}}
-= \frac{E}{1-2\nu}\,\alpha\,\Delta T
-= \frac{130000}{1-2\times0.27}\times1.2\times10^{-5}\times1
-= 3.39\ \mathrm{MPa}
+\sigma_{\mathrm{thermal}} = \frac{E}{1-2\nu}\,\alpha\,\Delta T = \frac{130000}{1-2\times0.27}\times1.2\times10^{-5}\times1 = 3.39\ \mathrm{MPa}
 $$
 
 これが「単位温度で膨張しようとする力の強さ」で、x・y・z方向に同じ $3.39\,\mathrm{MPa}$ が働きます。
@@ -656,10 +611,7 @@ $$
 **手順4：数字を入れる**
 
 $$
-f_{1,x}
-= \frac{V}{4}\times\frac{\partial N_1}{\partial x}\times\sigma_{\mathrm{thermal}}
-= 11.9\times(-0.2)\times3.39
-= -8.06
+f_{1,x} = \frac{V}{4}\times\frac{\partial N_1}{\partial x}\times\sigma_{\mathrm{thermal}} = 11.9\times(-0.2)\times3.39 = -8.06
 $$
 
 これが $\boldsymbol H_e$ の第1行が $-8.06$ になる理由です。同じように、節点1のy方向は勾配 $-1/6.61=-0.151$ を使って $11.9\times(-0.151)\times3.39=-6.09$、z方向は $-1/8.62=-0.116$ で $-4.67$ になります。節点24・89・9は原点から離れる向きなので符号がプラスになり、それぞれ $+8.06,\ +6.09,\ +4.67$ です。
@@ -667,38 +619,7 @@ $$
 これらを並べると、次の $12\times4$ 行列になります（節点 1・24・89・9、体積 $V=47.5\,\mathrm{mm}^3$）。
 
 $$
-\boldsymbol H_e=
-\begin{array}{c}
-\begin{array}{cccc}\ \ T_1 & \ T_{24} & \ T_{89} & \ \ T_9\end{array}\\
-\begin{bmatrix}
--8.06 & -8.06 & -8.06 & -8.06 \\
--6.09 & -6.09 & -6.09 & -6.09 \\
--4.67 & -4.67 & -4.67 & -4.67 \\
-\ \ 8.06 & \ \ 8.06 & \ \ 8.06 & \ \ 8.06 \\
-0 & 0 & 0 & 0 \\
-0 & 0 & 0 & 0 \\
-0 & 0 & 0 & 0 \\
-\ \ 6.09 & \ \ 6.09 & \ \ 6.09 & \ \ 6.09 \\
-0 & 0 & 0 & 0 \\
-0 & 0 & 0 & 0 \\
-0 & 0 & 0 & 0 \\
-\ \ 4.67 & \ \ 4.67 & \ \ 4.67 & \ \ 4.67
-\end{bmatrix}
-\end{array}
-\begin{array}{l}
-\leftarrow 節点1\ x\\
-\leftarrow 節点1\ y\\
-\leftarrow 節点1\ z\\
-\leftarrow 節点24\ x\\
-\leftarrow 節点24\ y\\
-\leftarrow 節点24\ z\\
-\leftarrow 節点89\ x\\
-\leftarrow 節点89\ y\\
-\leftarrow 節点89\ z\\
-\leftarrow 節点9\ x\\
-\leftarrow 節点9\ y\\
-\leftarrow 節点9\ z
-\end{array}
+\boldsymbol H_e= \begin{array}{c} \begin{array}{cccc}\ \ T_1 & \ T_{24} & \ T_{89} & \ \ T_9\end{array}\\ \begin{bmatrix} -8.06 & -8.06 & -8.06 & -8.06 \\ -6.09 & -6.09 & -6.09 & -6.09 \\ -4.67 & -4.67 & -4.67 & -4.67 \\ \ \ 8.06 & \ \ 8.06 & \ \ 8.06 & \ \ 8.06 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ \ \ 6.09 & \ \ 6.09 & \ \ 6.09 & \ \ 6.09 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ \ \ 4.67 & \ \ 4.67 & \ \ 4.67 & \ \ 4.67 \end{bmatrix} \end{array} \begin{array}{l} \leftarrow 節点1\ x\\ \leftarrow 節点1\ y\\ \leftarrow 節点1\ z\\ \leftarrow 節点24\ x\\ \leftarrow 節点24\ y\\ \leftarrow 節点24\ z\\ \leftarrow 節点89\ x\\ \leftarrow 節点89\ y\\ \leftarrow 節点89\ z\\ \leftarrow 節点9\ x\\ \leftarrow 節点9\ y\\ \leftarrow 節点9\ z \end{array}
 $$
 
 - **行（12個）** … この要素の4節点 × (x, y, z)
@@ -707,9 +628,7 @@ $$
 見てのとおり、**4列がすべて同じ値**になっています。これは線形四面体（341）の性質です。熱荷重の式で $\int N_k\,dV = V/4$ がどの節点でも同じ値になるため、要素の $\boldsymbol H_e$ は次のようにまとまり、4列が同一になります。
 
 $$
-\boldsymbol H_e = \frac{V}{4}\,\boldsymbol B^{\mathsf T}\boldsymbol D\,\alpha
-\begin{bmatrix}1&1&1&0&0&0\end{bmatrix}^{\mathsf T}
-\times\begin{bmatrix}1&1&1&1\end{bmatrix}
+\boldsymbol H_e = \frac{V}{4}\,\boldsymbol B^{\mathsf T}\boldsymbol D\,\alpha \begin{bmatrix}1&1&1&0&0&0\end{bmatrix}^{\mathsf T} \times\begin{bmatrix}1&1&1&1\end{bmatrix}
 $$
 
 つまりこの要素では「4節点のどれを1度上げても、要素に生じる力は同じ」ということです。
@@ -770,11 +689,7 @@ endif
 - 各成分を「全体の何行目・何列目か」に対応させて、`H_matrix.mtx`（Matrix Market形式）に書き出す
 
 $$
-\boldsymbol H_e =
-\begin{bmatrix}
-\boldsymbol H_e\boldsymbol e_1 & \boldsymbol H_e\boldsymbol e_2 & \boldsymbol H_e\boldsymbol e_3 & \boldsymbol H_e\boldsymbol e_4
-\end{bmatrix}
-\qquad(\boldsymbol e_k：局所節点kだけ1の単位温度)
+\boldsymbol H_e = \begin{bmatrix} \boldsymbol H_e\boldsymbol e_1 & \boldsymbol H_e\boldsymbol e_2 & \boldsymbol H_e\boldsymbol e_3 & \boldsymbol H_e\boldsymbol e_4 \end{bmatrix} \qquad(\boldsymbol e_k：局所節点kだけ1の単位温度)
 $$
 
 ポイントは、5章で説明した「単位温度を与えると温度荷重の1列が出てくる」という性質を、**要素の中で4回ぶん回している**だけ、という点です。物理を計算する `TLOAD_C3` 自体には一切手を入れておらず、FrontISTR標準の計算をそのまま呼び直しています。だからこそ、出てくる $\boldsymbol H$ は標準の温度荷重と一致します（検証は次章）。
@@ -1046,9 +961,7 @@ DUMPH: wrote H_matrix.mtx, shape=1275 425
 一番確実なのは、5章で取り出した**標準FrontISTRの右辺ベクトル**（節点2に単位温度を与えたときのもの）と、**改造版が出した $\boldsymbol H$ の第2列**が一致するか比べることです。標準側の温度荷重計算を「正解」として使う考え方です。
 
 $$
-\underbrace{\boldsymbol H[:,2]}_{\text{改造版が出したHの第2列}}
-\stackrel{?}{=}
-\underbrace{\boldsymbol f(T_2=1)}_{\text{標準FrontISTRの右辺ベクトル}}
+\underbrace{\boldsymbol H[:,2]}_{\text{改造版が出したHの第2列}} \stackrel{?}{=} \underbrace{\boldsymbol f(T_2=1)}_{\text{標準FrontISTRの右辺ベクトル}}
 $$
 
 比べたのは1つの数字ではなく、長さ1275の2本のベクトルまるごとです。
@@ -1082,11 +995,7 @@ $$
 もう1つのチェックとして、全節点に同じ温度1を与えたとき（一様加熱）の合力を見ました。物体がどこも固定されていなければ、一様に温まった物体はただ自由に膨らむだけで、外向きの合力は生じないはずです。
 
 $$
-\boldsymbol f_{\mathrm{uniform}} = \boldsymbol H\boldsymbol 1,
-\qquad
-\sum_i f_{x,i}\approx0,\quad
-\sum_i f_{y,i}\approx0,\quad
-\sum_i f_{z,i}\approx0
+\boldsymbol f_{\mathrm{uniform}} = \boldsymbol H\boldsymbol 1, \qquad \sum_i f_{x,i}\approx0,\quad \sum_i f_{y,i}\approx0,\quad \sum_i f_{z,i}\approx0
 $$
 
 実際、各方向の合力は $10^{-10}$ 以下でした。物理的にも辻褄が合っています。
@@ -1124,12 +1033,7 @@ $$
 2つ目を1つ目に入れて $\boldsymbol u$ について解くと、
 
 $$
-\boldsymbol K\boldsymbol u=\boldsymbol H\boldsymbol T
-\quad\Longrightarrow\quad
-\boldsymbol u=\boldsymbol K^{-1}\boldsymbol H\,\boldsymbol T
-\equiv \boldsymbol W\boldsymbol T,
-\qquad
-\boldsymbol W:=\boldsymbol K^{-1}\boldsymbol H
+\boldsymbol K\boldsymbol u=\boldsymbol H\boldsymbol T \quad\Longrightarrow\quad \boldsymbol u=\boldsymbol K^{-1}\boldsymbol H\,\boldsymbol T \equiv \boldsymbol W\boldsymbol T, \qquad \boldsymbol W:=\boldsymbol K^{-1}\boldsymbol H
 $$
 
 この $\boldsymbol W$ が、**節点温度 $\boldsymbol T$ を入れると節点変位 $\boldsymbol u$ が返ってくる変換行列**です。大きさは $\boldsymbol H$ と同じ行数・列数で、
@@ -1147,27 +1051,13 @@ $$
 自由度を、固定していない自由 $f$ と固定 $c$ に分けて考えます。固定自由度は $\boldsymbol u_c=\boldsymbol 0$ です。$\boldsymbol K_{bc}$ はこの並びでブロックに書くと、
 
 $$
-\boldsymbol K_{bc}=
-\begin{bmatrix}
-\boldsymbol K_{ff} & \boldsymbol 0\\
-\boldsymbol 0 & \boldsymbol I
-\end{bmatrix},
-\qquad
-\begin{bmatrix}
-\boldsymbol K_{ff} & \boldsymbol 0\\
-\boldsymbol 0 & \boldsymbol I
-\end{bmatrix}
-\begin{bmatrix}\boldsymbol u_f\\ \boldsymbol u_c\end{bmatrix}
-=
-\begin{bmatrix}(\boldsymbol H\boldsymbol T)_f\\ \boldsymbol 0\end{bmatrix}
+\boldsymbol K_{bc}= \begin{bmatrix} \boldsymbol K_{ff} & \boldsymbol 0\\ \boldsymbol 0 & \boldsymbol I \end{bmatrix}, \qquad \begin{bmatrix} \boldsymbol K_{ff} & \boldsymbol 0\\ \boldsymbol 0 & \boldsymbol I \end{bmatrix} \begin{bmatrix}\boldsymbol u_f\\ \boldsymbol u_c\end{bmatrix} = \begin{bmatrix}(\boldsymbol H\boldsymbol T)_f\\ \boldsymbol 0\end{bmatrix}
 $$
 
 右辺の固定側を $\boldsymbol 0$ にするのがポイントです（固定点は $\boldsymbol u_c=\boldsymbol 0$ と決まっているため）。これを解くと、
 
 $$
-\boldsymbol u_f=\boldsymbol K_{ff}^{-1}(\boldsymbol H\boldsymbol T)_f,
-\qquad
-\boldsymbol u_c=\boldsymbol 0
+\boldsymbol u_f=\boldsymbol K_{ff}^{-1}(\boldsymbol H\boldsymbol T)_f, \qquad \boldsymbol u_c=\boldsymbol 0
 $$
 
 となり、自由自由度だけがちゃんと解かれ、固定自由度は自動的に0になります。実装上は「$\boldsymbol H$ の固定自由度の行を0に置き換えた $\boldsymbol H_{bc}$」を作り、
@@ -1183,8 +1073,7 @@ $$
 $\boldsymbol W=\boldsymbol K_{bc}^{-1}\boldsymbol H_{bc}$ を、逆行列を明示的に作らずに列ごとに解きます。$\boldsymbol H_{bc}$ の第 $j$ 列を $\boldsymbol h_j$、$\boldsymbol W$ の第 $j$ 列を $\boldsymbol w_j$ とすると、
 
 $$
-\boldsymbol K_{bc}\,\boldsymbol w_j=\boldsymbol h_j
-\qquad(j=1,\dots,425)
+\boldsymbol K_{bc}\,\boldsymbol w_j=\boldsymbol h_j \qquad(j=1,\dots,425)
 $$
 
 という連立1次方程式を425回解くだけです。$\boldsymbol K_{bc}$ は一度だけLU分解しておけば、各列は前進・後退代入で速く解けます。
@@ -1224,9 +1113,7 @@ $\boldsymbol W=\boldsymbol K^{-1}\boldsymbol H$ が、温度から変位を正�
 $\boldsymbol W$ は全自由度ぶんの変換表ですが、**知りたい点だけを行で抜き出す**こともできます。節点 $n$ の変位（x,y,z の3成分）は、$\boldsymbol W$ のうち節点 $n$ に対応する3行だけで決まります。この3行を $\boldsymbol W_n$（$3\times425$）と書くと、
 
 $$
-\boldsymbol u_n=\boldsymbol W_n\,\boldsymbol T,
-\qquad
-\boldsymbol W_n=\boldsymbol W[\,3(n-1){+}1:3n,\ :\,]
+\boldsymbol u_n=\boldsymbol W_n\,\boldsymbol T, \qquad \boldsymbol W_n=\boldsymbol W[\,3(n-1){+}1:3n,\ :\,]
 $$
 
 です。全体（$1275\times425$）を持たなくても、この $3\times425$ さえあれば、その点の変位は温度から直接計算できます。
@@ -1236,25 +1123,19 @@ $$
 「2点の変位の差」だけを知りたい場合も、行の抜き出しと引き算で作れます。節点1と節点2の変位差は、
 
 $$
-\boldsymbol u_1-\boldsymbol u_2
-=\boldsymbol W_1\boldsymbol T-\boldsymbol W_2\boldsymbol T
-=(\boldsymbol W_1-\boldsymbol W_2)\,\boldsymbol T
+\boldsymbol u_1-\boldsymbol u_2 =\boldsymbol W_1\boldsymbol T-\boldsymbol W_2\boldsymbol T =(\boldsymbol W_1-\boldsymbol W_2)\,\boldsymbol T
 $$
 
 なので、$\boldsymbol W_1-\boldsymbol W_2$ という $3\times425$ の行列を1つ作れば、それが「その2点の相対変位を、温度から直接計算する専用の変換表」になります。
 
 $$
-\boldsymbol W_{1-2}:=\boldsymbol W_1-\boldsymbol W_2\in\mathbb R^{3\times425},
-\qquad
-\boldsymbol u_1-\boldsymbol u_2=\boldsymbol W_{1-2}\,\boldsymbol T
+\boldsymbol W_{1-2}:=\boldsymbol W_1-\boldsymbol W_2\in\mathbb R^{3\times425}, \qquad \boldsymbol u_1-\boldsymbol u_2=\boldsymbol W_{1-2}\,\boldsymbol T
 $$
 
 実際に節点283と節点100で作って確かめました。全節点100度のとき、
 
 $$
-\boldsymbol u_{283}-\boldsymbol u_{100}
-=\boldsymbol W_{283\text{-}100}\,\boldsymbol T
-=(-1.439\times10^{-2},\ 1.832\times10^{-2},\ 1.381\times10^{-1})\ \mathrm{mm}
+\boldsymbol u_{283}-\boldsymbol u_{100} =\boldsymbol W_{283\text{-}100}\,\boldsymbol T =(-1.439\times10^{-2},\ 1.832\times10^{-2},\ 1.381\times10^{-1})\ \mathrm{mm}
 $$
 
 となり、$\boldsymbol u_{283}$ と $\boldsymbol u_{100}$ を別々に求めて引いた値と、機械精度（差 $10^{-17}$）で一致しました。$\boldsymbol W_{1-2}$ の各成分は「どの節点の温度が、この2点の相対変位にどれだけ効くか（mm/度）」を表す感度になっていて、温度センサの配置検討などにそのまま使えます。

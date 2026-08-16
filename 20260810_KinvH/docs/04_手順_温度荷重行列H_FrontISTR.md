@@ -35,9 +35,7 @@ Pythonで $\boldsymbol K^{-1}\boldsymbol H$ を計算する処理は、この記
 温度荷重行列Hは、節点温度ベクトル $\boldsymbol T$ を等価節点熱荷重ベクトル $\boldsymbol f_{\mathrm{thermal}}$ へ変換する行列である。
 
 $$
-\boldsymbol f_{\mathrm{thermal}}
-=
-\boldsymbol H\boldsymbol T
+\boldsymbol f_{\mathrm{thermal}} = \boldsymbol H\boldsymbol T
 $$
 
 各記号の意味は次のとおり。
@@ -49,17 +47,13 @@ $$
 今回のモデルは425節点の3次元ソリッドモデルである。1節点あたりx、y、zの3自由度を持つため、全自由度数は次のようになる。
 
 $$
-n_{\mathrm{dof}}
-=3\times425
-=1275
+n_{\mathrm{dof}} =3\times425 =1275
 $$
 
 したがって、Hの大きさは次のとおり。
 
 $$
-\boldsymbol H
-\in
-\mathbb R^{1275\times425}
+\boldsymbol H \in \mathbb R^{1275\times425}
 $$
 
 - Hの行：節点1のx、y、z、節点2のx、y、z、…に対応
@@ -70,25 +64,19 @@ $$
 全体剛性行列Kと変位 $\boldsymbol u$ の関係は次式で表される。
 
 $$
-\boldsymbol K\boldsymbol u
-=
-\boldsymbol f_{\mathrm{thermal}}
+\boldsymbol K\boldsymbol u = \boldsymbol f_{\mathrm{thermal}}
 $$
 
 ここへ $\boldsymbol f_{\mathrm{thermal}}=\boldsymbol H\boldsymbol T$ を代入する。
 
 $$
-\boldsymbol K\boldsymbol u
-=
-\boldsymbol H\boldsymbol T
+\boldsymbol K\boldsymbol u = \boldsymbol H\boldsymbol T
 $$
 
 境界条件を適切に処理した系では、次のように温度から変位を求められる。
 
 $$
-\boldsymbol u
-=
-\boldsymbol K^{-1}\boldsymbol H\boldsymbol T
+\boldsymbol u = \boldsymbol K^{-1}\boldsymbol H\boldsymbol T
 $$
 
 最終的に求めたい $\boldsymbol K^{-1}\boldsymbol H$ は、節点温度を節点変位へ変換する行列である。
@@ -100,12 +88,7 @@ $$
 等方材料の熱ひずみは、線膨張係数を $\alpha$、現在温度を $T$、初期温度を $T_0$ とすると次式になる。
 
 $$
-\boldsymbol\varepsilon_{\mathrm{thermal}}
-=
-\alpha(T-T_0)
-\begin{bmatrix}
-1 & 1 & 1 & 0 & 0 & 0
-\end{bmatrix}^{\mathsf T}
+\boldsymbol\varepsilon_{\mathrm{thermal}} = \alpha(T-T_0) \begin{bmatrix} 1 & 1 & 1 & 0 & 0 & 0 \end{bmatrix}^{\mathsf T}
 $$
 
 温度が上昇すると、x、y、z方向に同じ割合の伸びが生じる。せん断方向の熱ひずみは0である。
@@ -115,9 +98,7 @@ $$
 有限要素では、要素内部の温度を節点温度から補間する。
 
 $$
-T(\boldsymbol\xi)
-=
-\boldsymbol N(\boldsymbol\xi)\boldsymbol T_e
+T(\boldsymbol\xi) = \boldsymbol N(\boldsymbol\xi)\boldsymbol T_e
 $$
 
 - $\boldsymbol\xi$：要素内の位置
@@ -131,13 +112,7 @@ $$
 要素の等価節点熱荷重は次式で計算する。
 
 $$
-\boldsymbol f_{\mathrm{thermal},e}
-=
-\int_{V_e}
-\boldsymbol B^{\mathsf T}
-\boldsymbol D
-\boldsymbol\varepsilon_{\mathrm{thermal}}
-\,\mathrm dV
+\boldsymbol f_{\mathrm{thermal},e} = \int_{V_e} \boldsymbol B^{\mathsf T} \boldsymbol D \boldsymbol\varepsilon_{\mathrm{thermal}} \,\mathrm dV
 $$
 
 - $\boldsymbol B$：節点変位から要素ひずみを求める行列
@@ -147,25 +122,13 @@ $$
 材料定数が温度に依存せず、初期温度を0とすると、節点温度を行列の外へまとめられる。
 
 $$
-\boldsymbol f_{\mathrm{thermal},e}
-=
-\boldsymbol H_e\boldsymbol T_e
+\boldsymbol f_{\mathrm{thermal},e} = \boldsymbol H_e\boldsymbol T_e
 $$
 
 要素温度荷重行列 $\boldsymbol H_e$ は次式になる。
 
 $$
-\boldsymbol H_e
-=
-\int_{V_e}
-\boldsymbol B^{\mathsf T}
-\boldsymbol D
-\alpha
-\begin{bmatrix}
-1 & 1 & 1 & 0 & 0 & 0
-\end{bmatrix}^{\mathsf T}
-\boldsymbol N
-\,\mathrm dV
+\boldsymbol H_e = \int_{V_e} \boldsymbol B^{\mathsf T} \boldsymbol D \alpha \begin{bmatrix} 1 & 1 & 1 & 0 & 0 & 0 \end{bmatrix}^{\mathsf T} \boldsymbol N \,\mathrm dV
 $$
 
 FrontISTRは各要素の温度荷重を計算し、それを全体の右辺ベクトルへ足し合わせている。
@@ -314,34 +277,19 @@ FrontISTRは、解析中に全体Hを作ってから $\boldsymbol H\boldsymbol T
 Hを列ベクトルで表す。
 
 $$
-\boldsymbol H
-=
-\begin{bmatrix}
-\boldsymbol h_1 &
-\boldsymbol h_2 &
-\cdots &
-\boldsymbol h_{n_{\mathrm{node}}}
-\end{bmatrix}
+\boldsymbol H = \begin{bmatrix} \boldsymbol h_1 & \boldsymbol h_2 & \cdots & \boldsymbol h_{n_{\mathrm{node}}} \end{bmatrix}
 $$
 
 節点 $j$ だけが1、他の節点が0の温度ベクトルを $\boldsymbol e_j$ とする。
 
 $$
-\boldsymbol e_j
-=
-\begin{bmatrix}
-0 & \cdots & 0 & 1 & 0 & \cdots & 0
-\end{bmatrix}^{\mathsf T}
+\boldsymbol e_j = \begin{bmatrix} 0 & \cdots & 0 & 1 & 0 & \cdots & 0 \end{bmatrix}^{\mathsf T}
 $$
 
 この単位温度ベクトルをHへ掛けると、Hの第 $j$ 列だけが残る。
 
 $$
-\boldsymbol H\boldsymbol e_j
-=
-\boldsymbol h_j
-=
-\boldsymbol H[:,j]
+\boldsymbol H\boldsymbol e_j = \boldsymbol h_j = \boldsymbol H[:,j]
 $$
 
 したがって、節点 $j$ だけに単位温度を与えたときのRHSは、Hの第 $j$ 列になる。
@@ -594,13 +542,7 @@ Hの第2列は、節点2に単位温度を与えたときに全1275自由度へ�
 比較した2つは、数式では次の関係になる。
 
 $$
-\underbrace{\boldsymbol H[:,2]}_{
-\substack{\text{改造版が直接出力した}\\\text{Hの第2列}}
-}
-\stackrel{?}{=}
-\underbrace{\boldsymbol f_{\mathrm{rhs}}(T_2=1)}_{
-\substack{\text{標準FrontISTRが計算した}\\\text{温度荷重RHS}}
-}
+\underbrace{\boldsymbol H[:,2]}_{ \substack{\text{改造版が直接出力した}\\\text{Hの第2列}} } \stackrel{?}{=} \underbrace{\boldsymbol f_{\mathrm{rhs}}(T_2=1)}_{ \substack{\text{標準FrontISTRが計算した}\\\text{温度荷重RHS}} }
 $$
 
 比較したのは1つの値ではなく、長さ1275の2本のベクトルである。
@@ -615,19 +557,7 @@ $$
 相対差は次式で計算した。
 
 $$
-\mathrm{relative\ error}
-=
-\frac{
-\left\|
-\boldsymbol H[:,2]
--
-\boldsymbol f_{\mathrm{rhs}}(T_2=1)
-\right\|_2
-}{
-\left\|
-\boldsymbol f_{\mathrm{rhs}}(T_2=1)
-\right\|_2
-}
+\mathrm{relative\ error} = \frac{ \left\| \boldsymbol H[:,2] - \boldsymbol f_{\mathrm{rhs}}(T_2=1) \right\|_2 }{ \left\| \boldsymbol f_{\mathrm{rhs}}(T_2=1) \right\|_2 }
 $$
 
 今回の結果は次のとおり。
@@ -651,19 +581,13 @@ $$
 一様温度ベクトルを $\boldsymbol 1$ とすると、温度荷重は次式になる。
 
 $$
-\boldsymbol f_{\mathrm{uniform}}
-=
-\boldsymbol H\boldsymbol 1
+\boldsymbol f_{\mathrm{uniform}} = \boldsymbol H\boldsymbol 1
 $$
 
 拘束のない物体が一様に自由膨張する場合、各方向の合力は0になる。
 
 $$
-\sum_i f_{x,i}\approx0,
-\qquad
-\sum_i f_{y,i}\approx0,
-\qquad
-\sum_i f_{z,i}\approx0
+\sum_i f_{x,i}\approx0, \qquad \sum_i f_{y,i}\approx0, \qquad \sum_i f_{z,i}\approx0
 $$
 
 今回の計算でも、各方向の合力は約 $10^{-10}$ 以下だった。
@@ -695,11 +619,7 @@ Hの全425列を、2つの独立なルートで作って突き合わせた。
 初期温度や基準温度による定数項がある場合、温度荷重は次の形になる可能性がある。
 
 $$
-\boldsymbol f_{\mathrm{thermal}}
-=
-\boldsymbol H\boldsymbol T
-+
-\boldsymbol c
+\boldsymbol f_{\mathrm{thermal}} = \boldsymbol H\boldsymbol T + \boldsymbol c
 $$
 
 この場合、単位温度解析のRHSへ $\boldsymbol c$ が混ざるため、そのままHの列として使用できない。
@@ -713,15 +633,11 @@ $$
 固定自由度を除いたKとHを使用する。
 
 $$
-\boldsymbol K_{ff}\boldsymbol u_f
-=
-\boldsymbol H_f\boldsymbol T
+\boldsymbol K_{ff}\boldsymbol u_f = \boldsymbol H_f\boldsymbol T
 $$
 
 $$
-\boldsymbol u_f
-=
-\boldsymbol K_{ff}^{-1}\boldsymbol H_f\boldsymbol T
+\boldsymbol u_f = \boldsymbol K_{ff}^{-1}\boldsymbol H_f\boldsymbol T
 $$
 
 ### 温度依存材料

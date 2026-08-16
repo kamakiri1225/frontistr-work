@@ -181,12 +181,7 @@ DUMPH: wrote H_matrix.mtx, shape=1275 425
 等方材料の熱ひずみは、温度差を $\Delta T$、線膨張係数を $\alpha$ とすると次式になる。
 
 $$
-\boldsymbol{\varepsilon}_{\mathrm{th}}
-=
-\alpha \Delta T
-\begin{bmatrix}
-1 & 1 & 1 & 0 & 0 & 0
-\end{bmatrix}^{\mathsf T}
+\boldsymbol{\varepsilon}_{\mathrm{th}} = \alpha \Delta T \begin{bmatrix} 1 & 1 & 1 & 0 & 0 & 0 \end{bmatrix}^{\mathsf T}
 $$
 
 要素内部の温度は、節点温度 $\boldsymbol{T}_e$ と形状関数 $\boldsymbol{N}$ から補間する。
@@ -200,35 +195,17 @@ $$
 要素の等価熱荷重ベクトルは次式で計算する。
 
 $$
-\boldsymbol{f}_{\mathrm{th},e}
-=
-\int_{V_e}
-\boldsymbol{B}^{\mathsf T}
-\boldsymbol{D}
-\boldsymbol{\varepsilon}_{\mathrm{th}}
-\,\mathrm{d}V
+\boldsymbol{f}_{\mathrm{th},e} = \int_{V_e} \boldsymbol{B}^{\mathsf T} \boldsymbol{D} \boldsymbol{\varepsilon}_{\mathrm{th}} \,\mathrm{d}V
 $$
 
 温度に依存する部分を節点温度の前へまとめると、次の形になる。
 
 $$
-\boldsymbol{f}_{\mathrm{th},e}
-=
-\boldsymbol{H}_e\boldsymbol{T}_e
+\boldsymbol{f}_{\mathrm{th},e} = \boldsymbol{H}_e\boldsymbol{T}_e
 $$
 
 $$
-\boldsymbol{H}_e
-=
-\int_{V_e}
-\boldsymbol{B}^{\mathsf T}
-\boldsymbol{D}
-\alpha
-\begin{bmatrix}
-1 & 1 & 1 & 0 & 0 & 0
-\end{bmatrix}^{\mathsf T}
-\boldsymbol{N}
-\,\mathrm{d}V
+\boldsymbol{H}_e = \int_{V_e} \boldsymbol{B}^{\mathsf T} \boldsymbol{D} \alpha \begin{bmatrix} 1 & 1 & 1 & 0 & 0 & 0 \end{bmatrix}^{\mathsf T} \boldsymbol{N} \,\mathrm{d}V
 $$
 
 ここで、$\boldsymbol{B}$ は変位・ひずみ行列、$\boldsymbol{D}$ は弾性構成則行列である。
@@ -240,9 +217,7 @@ FrontISTRの既存ルーチン `TLOAD_C3` は、節点温度から要素熱荷�
 今回の改造では、四面体要素の局所節点 $j$ だけを1、他を0とした単位温度ベクトル $\boldsymbol{e}_j$ を順に与える。
 
 $$
-\boldsymbol{H}_e\boldsymbol{e}_j
-=
-\boldsymbol{H}_e[:,j]
+\boldsymbol{H}_e\boldsymbol{e}_j = \boldsymbol{H}_e[:,j]
 $$
 
 これにより、既存の `TLOAD_C3` を使って要素Hの各列を求める。得られた要素Hを全要素について出力し、同じ全体行・列の成分を加算すると全体Hになる。
@@ -476,9 +451,7 @@ tt = [0, 1, 0, 0]
 このとき `TLOAD_C3` が返す `vect` は、要素Hの第2列になる。
 
 $$
-\boldsymbol H_e\boldsymbol e_2
-=
-\boldsymbol H_e[:,2]
+\boldsymbol H_e\boldsymbol e_2 = \boldsymbol H_e[:,2]
 $$
 
 #### 全体行番号と列番号
@@ -840,9 +813,7 @@ $$
 - 相対差: `0.0`
 
 $$
-\boldsymbol H[:,2]
-=
-\boldsymbol f_{\mathrm{thermal}}(T_2=1)
+\boldsymbol H[:,2] = \boldsymbol f_{\mathrm{thermal}}(T_2=1)
 $$
 
 一様温度ベクトルに対する全外力の各方向合計も約 $10^{-10}$ であり、数値誤差の範囲で自己平衡した。
