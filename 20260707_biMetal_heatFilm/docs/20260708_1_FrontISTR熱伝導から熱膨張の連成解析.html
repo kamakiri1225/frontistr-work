@@ -1,0 +1,431 @@
+<!-- wp:shortcode -->
+[mathjax]
+<!-- /wp:shortcode -->
+
+<!-- wp:paragraph -->
+<p>今回はFrontISTRで、<strong>熱伝導解析で求めた温度分布を熱膨張解析に読み込む</strong>という2ステップの連成解析をやってみた話です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>こんにちは（<a href="https://twitter.com/t_kun_kamakiri">@<strong>t_kun_kamakiri</strong></a>）</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><a href="#">前回のバイメタルの熱応力解析記事</a>では、温度を!TEMPERATUREで「全体を393Kにする」と直接指定しました。今回はその発展で、まず対流熱伝達（フィルム係数）から熱伝導解析で温度分布を求め、その結果をそのまま熱膨張解析に渡します。温度を直接与える場合と比べて、より実際の伝熱に近い温度分布を使えるのが特徴です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>温度分布は熱解析で求め、その温度条件を構造解析に引き継いで熱膨張を計算しています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>先に結果を示します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
+<figure class="wp-block-image size-large"><img src="[ここに 温度_変位.png のアップロードURL]" alt="FrontISTR熱伝導→熱膨張解析：温度分布と変位"/></figure>
+<!-- /wp:image -->
+
+<!-- wp:paragraph -->
+<p><em>Step1で求めた温度分布（左）と、それを読み込んで計算したStep2の変形（右）。</em></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>先端（X=200mm）を373Kに固定し、上面を対流冷却（周囲293K）することで温度勾配を作り、その温度分布を熱膨張解析に渡しています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:jin-gb-block/box-with-headline {"boxTitle":"この記事で分かること"} -->
+<div class="wp-block-jin-gb-block-box-with-headline kaisetsu-box1"><div class="kaisetsu-box1-title">この記事で分かること</div><!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>熱伝導解析（!SOLUTION,TYPE=HEAT）と熱膨張解析（!SOLUTION,TYPE=STATIC）を2ステップに分けて連成させる方法</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>対流熱伝達境界条件!SFILMと、熱源としての!FIXTEMPの設定</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>Step1の温度分布をStep2に読み込む!TEMPERATURE, READRESULT, SSTEPの使い方</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>hecmw_ctrl.datで別フォルダの熱解析結果を相対パスで引き継ぐ方法</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>温度を直接与えた場合との変形量の違い</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list --></div>
+<!-- /wp:jin-gb-block/box-with-headline -->
+
+<!-- wp:paragraph -->
+<p>熱伝導解析の設定から、その結果を構造解析に引き継ぐ流れ、フォルダ分けの運用まで順番に見ていきます。次のような方に向けた内容です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:jin-gb-block/box-with-headline {"boxTitle":"こんな方におすすめ"} -->
+<div class="wp-block-jin-gb-block-box-with-headline kaisetsu-box1"><div class="kaisetsu-box1-title">こんな方におすすめ</div><!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>温度を直接与えるのではなく、対流条件から現実的な温度分布を求めたい方</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>熱伝導解析の結果を構造解析（熱応力・熱膨張）に受け渡す方法が分からない方</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>FrontISTRで複数ステップの解析をどうフォルダ分けして管理すればよいか知りたい方</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list --></div>
+<!-- /wp:jin-gb-block/box-with-headline -->
+
+<!-- wp:paragraph -->
+<p><em>FrontISTR 5.9<br>WSL2環境に構築</em></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">なぜ2ステップに分けるのか</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>前回のバイメタル記事では、!TEMPERATUREで温度を直接指定しました。温度分布が既に分かっている（あるいは単純化してよい）場合には手早い方法です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>一方で、実際の製品では「対流でどれくらい冷える／温まるか」「どこが何度になるか」自体が知りたいことも多くあります。この場合は先に熱伝導解析で温度分布を求め、それを構造解析に渡して熱膨張・熱応力を計算する、という2段階の流れになります。FrontISTRでは次のように分けて実行します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list"} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>Step1（001_heatフォルダ）</strong>：!SOLUTION,TYPE=HEATで温度分布を求める</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><strong>Step2（002_expansionフォルダ）</strong>：!SOLUTION,TYPE=STATICで、Step1の温度分布を!TEMPERATURE, READRESULTで読み込みながら変形・応力を求める</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>Step1は001_heat、Step2は002_expansionと作業フォルダを分け、それぞれに.cntを用意してfistr1を実行します（後述）。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">フォルダ構成</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Step1とStep2のファイルを同じフォルダに混在させると、hecmw_ctrl.datやFistrModel.cntの使い回しで事故りやすいため、フォルダを2つに分けました。<strong>まず 001_heat フォルダで熱伝導解析を行い、次に 002_expansion フォルダで熱膨張を計算する</strong>という流れです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>20260707_biMetal_heatFilm/
+  001_heat/               ← Step1: 熱伝導解析
+    FistrModel.msh
+    FistrModel.cnt
+    hecmw_ctrl.dat
+    FistrModel.res.0.1    ← この温度分布をStep2が読む
+  002_expansion/           ← Step2: 熱膨張（熱応力）解析
+    FistrModel.cnt          (温度は001_heatの結果を読み込むだけなので境界条件は少ない)
+    hecmw_ctrl.dat           (../001_heat/FistrModel.msh, ../001_heat/FistrModel.res を参照)</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>フォルダ名の頭に 001_ 002_ と番号を付けているのは、実行する順番を分かりやすくするためです。002_expansion/hecmw_ctrl.datから001_heat/側のメッシュと結果ファイルを相対パスで直接参照します。メッシュファイルをコピーする必要がなく、Step1の結果が更新されればStep2はそれを参照するだけなので、ファイルの二重管理を避けられます。メッシュはbiMetalと同じもの（Aluminum/Steelの2層板）を使っています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">Step1：熱伝導解析の設定</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>上面（press面）に対流熱伝達、先端（load：X=200mmのノードグループ）に固定温度を与えて、温度勾配を作ります。今回の熱解析の条件は次のとおりです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
+<figure class="wp-block-image size-large"><img src="[ここに 熱解析条件1.png のアップロードURL]" alt="熱伝導解析の境界条件：先端373K固定と上面の対流冷却"/></figure>
+<!-- /wp:image -->
+
+<!-- wp:paragraph -->
+<p><em>先端を373Kに固定し、上面から100 W/m²K・周囲293Kで対流冷却する。右端（高温）から左端（低温）へ温度勾配ができる。</em></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ここでのポイントは、熱伝導解析では構造解析のような<strong>変位の拘束条件が要らない</strong>ことです。構造解析では物体が動いてしまわないように固定端を設けますが、熱伝導解析で解くのは温度であって物体は動きません。境界条件として与えるのは「温度」や「熱の出入り」だけで、!BOUNDARYのような変位拘束は不要です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>!SOLUTION,TYPE=HEAT
+!HEAT
+ 0.0
+
+!OUTPUT_RES
+TEMP, ON
+!OUTPUT_VIS
+TEMP, ON
+
+# press面（上面全体）に対流熱伝達（フィルム）境界条件を設定
+# 面グループ名, 熱伝達率[W/m^2K], 周囲温度[K]
+!SFILM
+press, 100.0, 293.0
+
+# 熱源：load面（X=0.2の先端、ノードグループ）を固定温度373Kにする
+!FIXTEMP
+load, 373.0
+
+!MATERIAL, NAME=Aluminum
+!CONDUCTIVITY, TYPE=ISOTROPIC
+237.0
+
+!MATERIAL, NAME=Steel
+!CONDUCTIVITY, TYPE=ISOTROPIC
+50.0</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:list {"className":"wp-block-list"} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>!SOLUTION,TYPE=HEAT + !HEAT / 0.0 で定常熱伝導解析を指定します（0.0が定常、非定常なら時間刻みを書く）</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>!SFILMは面グループに対流熱伝達を与えます。書式は「面グループ名, 熱伝達率, 周囲温度」です</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>!FIXTEMPは節点グループに温度を固定します</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>熱伝導率は!CONDUCTIVITYで材料ごとに与えます</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>設定で気をつけた点が2つあります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>1つ目は、!SFILMは面グループ(SGROUP)しか参照できないことです。今回のメッシュには先端だけを切り出した面グループがなく、ノードグループ(NGROUP)のloadはそのまま!SFILMには使えません（fistr1はNGROUPをSGROUPとして受け付けない）。そのため先端は!FIXTEMPで固定温度として扱いました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>2つ目は、熱源がないと定常解が一様になることです。press面の対流だけ・他は断熱という設定では、内部発熱も固定温度もないため、定常解は周囲温度293Kで一様になってしまいます。!FIXTEMPで先端を373Kに固定して、初めて温度勾配のある結果になります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>実行すると、先端（373K固定）から反対側にかけて温度が下がり、最低温度は約362.4Kでした。Aluminum・Steelとも熱伝導率が高いため、200mm程度の長さでは対流だけではあまり冷えず、勾配は緩やかです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">Step2：熱膨張解析の設定</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Step1の温度分布を読み込んで、変位・応力を計算します。Step2は構造解析なので、Step1の熱解析とは違って変位の拘束が必要です。左端を完全拘束し、そこに熱解析で求めた温度分布を与えます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
+<figure class="wp-block-image size-large"><img src="[ここに 熱膨張1.png のアップロードURL]" alt="熱膨張解析の条件：左端を完全拘束し、熱解析の温度分布を与える"/></figure>
+<!-- /wp:image -->
+
+<!-- wp:paragraph -->
+<p><em>左端を完全拘束（fix）し、Step1で計算した温度分布を与える。灰色が変形前、色付きが変形後で、線膨張係数の差により板が反っている。</em></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>!SOLUTION,TYPE=STATIC
+!STATIC
+
+!OUTPUT_RES
+DISP, ON
+NMISES, ON
+NSTRESS, ON
+EMISES, ON
+TEMP, ON
+!OUTPUT_VIS
+DISP, ON
+NMISES, ON
+NSTRESS, ON
+EMISES, ON
+TEMP, ON
+
+!BOUNDARY, GRPID=1
+fix, 1, 1, 0.0
+fix, 2, 2, 0.0
+fix, 3, 3, 0.0
+
+# Step1(heatFilm)の結果を読み込む
+!TEMPERATURE, READRESULT=1, SSTEP=1
+!REFTEMP
+293</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>今回の肝は!TEMPERATURE, READRESULT=1, SSTEP=1です。各オプションの意味は次のとおりです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list"} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>READRESULT=1</strong>：熱伝導解析の結果を1ステップ分読み込む</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><strong>SSTEP=1</strong>：その最初のステップから読む</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>これを指定すると、温度の値そのものは書きません（節点番号・温度の並びは不要）。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ここで注意したいのは、<strong>この.cntには「どのファイルから温度を持ってくるか」は書かれていない</strong>ことです。.cntの!TEMPERATURE, READRESULTは「熱解析結果から温度を読む」というスイッチにすぎず、実際にどの結果ファイルを読むかは次の節で説明するhecmw_ctrl.dat側で指定します。つまり熱条件の引き継ぎは、.cntと001_heatの結果ファイルをhecmw_ctrl.datが仲介する形になっています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>!REFTEMPは熱ひずみの基準温度で、293Kにしています。ここからの差分でひずみが発生します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>材料の弾性率・密度・線膨張係数は.mshファイルに埋め込まれているため、Step2の.cntで再定義していません。同じメッシュをStep1と共有しているためです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">hecmw_ctrl.datで熱解析の温度を引き継ぐ</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><strong>熱条件を実際に引き継いでいるのはこのhecmw_ctrl.datです。</strong>002_expansion側のhecmw_ctrl.datで、メッシュと温度入力（fstrTEMP）を001_heatフォルダから相対パスで参照します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>!MESH, NAME=fstrMSH, TYPE=HECMW-ENTIRE
+../001_heat/FistrModel.msh
+
+!CONTROL,NAME=fstrCNT
+FistrModel.cnt
+
+!RESULT,NAME=fstrRES,IO=OUT
+FistrModel.res
+
+!RESULT,NAME=fstrTEMP,IO=IN
+../001_heat/FistrModel.res</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>このファイルは「キーワード行」と「その次の行のファイル名」が1組になっています。上から順に見ていきます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list"} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>!MESH, NAME=fstrMSH</strong> → ../001_heat/FistrModel.msh<br>使うメッシュを指定します。001_heatのメッシュをそのまま参照します（Step1と同じメッシュ）。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><strong>!CONTROL, NAME=fstrCNT</strong> → FistrModel.cnt<br>解析制御ファイル（.cnt）を指定します。002_expansion内の自分のFistrModel.cntです。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><strong>!RESULT, NAME=fstrRES, IO=OUT</strong> → FistrModel.res<br>Step2の計算結果を<strong>書き出す</strong>先です。002_expansion内のFistrModel.resに出力します。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><strong>!RESULT, NAME=fstrTEMP, IO=IN</strong> → ../001_heat/FistrModel.res<br>温度として<strong>読み込む</strong>ファイルです。001_heat（Step1）の結果を読み込み、これがStep2に引き継ぐ温度分布になります。</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>ポイントは末尾のIOです。IOは Input/Output（入力/出力）の略で、そのファイルを読み込むのか書き出すのかの向きを表します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list"} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>IO=IN</strong>：入力。fistr1がそのファイルを読み込む</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><strong>IO=OUT</strong>：出力。fistr1がそのファイルに結果を書き出す</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>fstrTEMPにIO=INを付けることで「001_heatの結果を温度として読み込む」という意味になり、Step1で求めた温度分布がStep2に渡されます。一方のfstrRESはIO=OUTかつ002_expansion内の別ファイル名なので、Step1の結果を上書きしません。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>なお、.cntの!TEMPERATURE, READRESULTは「熱解析結果から温度を読む」というスイッチ、このhecmw_ctrl.datのfstrTEMP, IO=INは「読み込むファイルの場所」で、この2つがセットになって初めて温度が引き継がれます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">実行手順（WSL）</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>001_heatと002_expansionで、この順にfistr1を実行します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>cd /mnt/d/work/002_CAE/frontistr/work/20260707_biMetal_heatFilm
+
+# Step1: 熱伝導解析
+cd 001_heat
+fistr1
+cd ..
+
+# Step2: 熱膨張解析（Step1の温度分布を読み込む）
+cd 002_expansion
+fistr1
+cd ..</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>002_expansion/FistrModel.vis_psf.*.pvtuをParaViewで開けば、DISP（熱膨張による変形）とTEMPの両方を確認できます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">結果：温度の与え方で変形量が変わる</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>先端中央（X=200mm、幅中央、AluminumとSteelの接合面）の節点変位を、前回のbiMetal（温度を直接指定）と比べてみます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:table {"hasFixedLayout":false} -->
+<figure class="wp-block-table"><table><thead><tr><th></th><th>温度の与え方</th><th>先端Z方向変位</th></tr></thead><tbody><tr><td>前回（biMetal）</td><td>!TEMPERATUREで全体を393Kに直接指定（ΔT=100K一様）</td><td>3.637mm</td></tr><tr><td>今回（heatFilm）</td><td>先端373K固定＋対流冷却で生じた温度分布（373K→362K、非一様）</td><td>2.586mm</td></tr></tbody></table></figure>
+<!-- /wp:table -->
+
+<!-- wp:paragraph -->
+<p>最高温度はどちらも近い値（393K vs 373K）ですが、heatFilmは温度上昇が先端付近に偏っていて全体の平均的なΔTが小さいため、変位はひとまわり小さくなりました。温度を一様に与えるか、実際の熱伝導・対流から分布を求めるかで、同じ「最高温度」でも変形量が変わることが確認できます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">まとめ</h2>
+<!-- /wp:heading -->
+
+<!-- wp:list {"className":"wp-block-list"} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>FrontISTRでは、熱伝導解析（!SOLUTION,TYPE=HEAT）と構造解析（!SOLUTION,TYPE=STATIC）を2つの.cnt・2回のfistr1実行に分けて連成できます。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>対流境界条件は!SFILMで面グループ(SGROUP)に対して設定します。ノードグループには使えません。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>対流条件だけでは温度勾配が生まれないことがあるため、!FIXTEMPなどの熱源を別途用意します。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>Step2側は!TEMPERATURE, READRESULT=1, SSTEP=1で「熱解析結果から温度を読む」スイッチを入れます。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>実際にどの結果ファイルから温度を引き継ぐかはhecmw_ctrl.datのNAME=fstrTEMP, IO=INで相対パス指定します（.cntではありません）。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>温度の与え方（直接指定か、対流から求めるか）によって、同程度の最高温度でも変形量は変わります。</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>次回は、対流の熱伝達率や周囲温度を変えたときに温度分布・変形がどう変化するか、パラメータを振って試してみようと思います。</p>
+<!-- /wp:paragraph -->

@@ -1,0 +1,29 @@
+############################################################
+# Direct H matrix export test for the customized FrontISTR  #
+# Element type: 341 (first-order tetrahedron)                #
+############################################################
+!VERSION
+ 3
+!SOLUTION,TYPE=STATIC
+############################################################
+# Unit temperature at node 2 for comparison with H(:,2).    #
+# H_matrix.mtx itself contains every nodal-temperature col.  #
+############################################################
+!TEMPERATURE
+ 2, 1.0
+############################################################
+# DUMPH=YES     : output H_matrix.mtx
+# DUMPTYPE=MM   : also output K and RHS in Matrix Market
+# DUMPEXIT=YES  : stop after matrix output
+############################################################
+!SOLVER,METHOD=DIRECT,ITERLOG=NO,TIMELOG=YES,DUMPTYPE=MM,DUMPH=YES,DUMPEXIT=YES
+ 10000, 1
+ 1.0e-8, 1.0, 0.0
+!MATERIAL, NAME=FC300
+!ELASTIC, TYPE=ISOTROPIC
+ 130000.0, 0.27
+!DENSITY
+ 7.4e-9
+!EXPANSION_COEFF
+ 1.2e-5
+!END

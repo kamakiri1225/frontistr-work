@@ -1,0 +1,29 @@
+#
+# Global Control Data File - 熱膨張（熱応力）解析
+# メッシュと温度分布(fstrTEMP)は ../001_heat/ の熱伝導解析結果を参照する
+#
+!MESH, NAME=fstrMSH, TYPE=HECMW-ENTIRE
+../001_heat/FistrModel.msh
+#
+# for visualizer
+#
+!MESH, NAME=mesh, TYPE=HECMW-ENTIRE
+../001_heat/FistrModel.msh
+#
+# for solver
+#
+!CONTROL,NAME=fstrCNT
+FistrModel.cnt
+!RESULT,NAME=fstrRES,IO=OUT
+FistrModel.res
+!RESULT,NAME=fstrTEMP,IO=IN
+../001_heat/FistrModel.res
+!RESTART,NAME=restart_out,IO=OUT
+FistrModel.restart
+#
+# for visualizer
+#
+!RESULT,NAME=result,IO=IN
+FistrModel.res
+!RESULT,NAME=vis_out,IO=OUT
+FistrModel.vis
