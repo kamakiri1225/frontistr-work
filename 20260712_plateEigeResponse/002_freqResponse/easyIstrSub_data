@@ -1,0 +1,28 @@
+#
+#  easyIstr用sub_data
+#  （currDir内に保存される）
+
+
+# FistrModel
+convertOpt unv2fistr
+sourceMesh 
+
+#addOutputItems
+
+#parallSetting
+parallel False 4
+thread 1
+
+#FrontISTR version
+fistrVersion 5.0
+
+addMesh 
+
+keepCond 
+
+importItem 
+
+exportItem 
+
+dimension kg_m_s
+

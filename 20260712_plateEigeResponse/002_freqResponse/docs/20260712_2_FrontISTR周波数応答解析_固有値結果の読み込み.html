@@ -1,0 +1,709 @@
+<!-- wp:shortcode -->
+[mathjax]
+<!-- /wp:shortcode -->
+
+<!-- wp:paragraph -->
+<p>今回はFrontISTRで、前回求めた片持ち板の<strong>固有値解析結果を読み込んで、周波数応答解析</strong>を行った話です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>こんにちは（<a href="https://twitter.com/t_kun_kamakiri">@<strong>t_kun_kamakiri</strong></a>）</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>前回は 001_eigen フォルダで片持ち板の固有値解析を行い、1次固有振動数が約536Hzになることを確認しました。今回はその結果を 002_freqResponse フォルダから読み込み、先端に周期荷重を与えたときの応答振幅を見ます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">どういう条件で解析したか</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>今回の周波数応答解析は、次の条件で行いました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list"} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>加振する場所</strong>：先端の load 面（自由端）</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><strong>加振方向</strong>：Z方向（板厚方向、DOF=3）</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><strong>荷重</strong>：振幅1.0の周期荷重。単位荷重なので、応答振幅がそのままコンプライアンス（単位荷重あたりの変位）になります</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><strong>周波数範囲</strong>：100〜1000Hzを90ステップ（10Hz刻み）でスキャン</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><strong>減衰</strong>：Rayleigh減衰（Rm=0.1, Rk=0）</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><strong>モニタ節点</strong>：node 2（先端の1点）の変位</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">どのモードのコンプライアンスを見ているか</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>前回の固有値解析では、<strong>1次モードがZ方向（板厚方向）の1次曲げ</strong>で、その固有振動数は約536Hzでした。この1次モードの変形は次のような形です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
+<figure class="wp-block-image size-large"><img src="img/mode1.png" alt="FrontISTR：1次モード（Z方向の1次曲げ、約536Hz）"/></figure>
+<!-- /wp:image -->
+
+<!-- wp:paragraph -->
+<p><em>1次モード（Z方向の1次曲げ、約536Hz）。灰色が変形前、色付きが変形形状で、固定端から自由端に向かって板厚方向に大きく曲がります。</em></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>そこで今回は、その1次モードを狙って<strong>先端をZ方向に加振</strong>し、1次固有振動数の近くで応答（コンプライアンス）がどう大きくなるかを見ます。つまり、この記事のコンプライアンス波形は<strong>1次モード（Z方向曲げ）の共振</strong>を捉えたものです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>先に結果を示します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
+<figure class="wp-block-image size-large"><img src="img/compliance.png" alt="FrontISTR周波数応答解析：コンプライアンス波形"/></figure>
+<!-- /wp:image -->
+
+<!-- wp:paragraph -->
+<p><em>先端をZ方向に加振し、100〜1000Hzを10Hz刻みで計算したコンプライアンス波形。540Hzで最大応答になり、1次モード（Z方向曲げ）の固有振動数536Hzの近くで共振していることが分かります。</em></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>今回のピークは <strong>540Hz、振幅 1.093×10⁻²</strong> でした。固有値解析で得た1次固有振動数536Hz（Z方向の1次曲げ）にかなり近い位置で応答が大きくなっており、狙った1次モードの共振を捉えられています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:jin-gb-block/box-with-headline {"boxTitle":"この記事で分かること"} -->
+<div class="wp-block-jin-gb-block-box-with-headline kaisetsu-box1"><div class="kaisetsu-box1-title">この記事で分かること</div><!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>FrontISTRで固有値解析結果を読み込んで周波数応答解析を行う方法</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>!EIGENREAD が読んでいるもの</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>hecmw_ctrl.dat で 001_eigen の固有ベクトルを参照する仕組み</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>メッシュを「001から参照する方法」と「002に直接置く方法」の2通りと、easyIstrで開くにはどちらが必要か</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>周波数範囲（スキャン範囲）の決め方</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>!FLOAD で周期荷重を与える方法</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>コンプライアンス曲線だけが目的のときに、.res や .pvtu/.vtu の出力を止める方法</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list --></div>
+<!-- /wp:jin-gb-block/box-with-headline -->
+
+<!-- wp:paragraph -->
+<p><em>FrontISTR 5.9<br>WSL2環境に構築</em></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">解析の流れ</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>今回の解析は2ステップです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>20260712_plateEigeResponse/
+  001_eigen/                 ← Step1: 固有値解析
+    FistrModel.msh
+    FistrModel.cnt
+    hecmw_ctrl.dat
+    0.log                    ← 固有値・固有振動数
+    FistrModel.res.0.1...20  ← 固有ベクトル
+
+  002_freqResponse/          ← Step2: 周波数応答解析
+    FistrModel.cnt
+    FistrModel.msh           ← 001からコピー（後述の方法2）
+    hecmw_ctrl.dat
+    0.log                    ← 周波数-応答振幅
+    docs/
+      compliance.csv
+      img/compliance.png</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>Step2の周波数応答解析では、Step1で作成した固有値解析の結果を入力として使います。固有値解析と周波数応答解析をフォルダで分けることで、どの結果を次の解析に渡しているかを追いやすくなります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">002が読み込む3つの情報</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>周波数応答解析では、固有値解析で得られたモード情報を使って、指定した周波数で構造がどれくらい応答するかを計算します。そのため、002側では次の3種類の情報を用意します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list"} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>メッシュ</strong>：節点・要素・節点グループ（fix, load など）</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><strong>固有値・固有振動数</strong>：各モードが何Hzか</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><strong>固有ベクトル</strong>：各モードでどのように変形するか</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>メッシュは解析対象の形状と節点グループを決める情報です。固有値・固有振動数は、どの周波数で共振しやすいかを表します。固有ベクトルは、各モードでどの方向にどのように変形するかを表します。002の周波数応答解析は、この3つを組み合わせて計算します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>このうち<strong>固有値・固有振動数（0.log）と固有ベクトル（FistrModel.res）は、必ず001の固有値解析結果を読み込みます</strong>。../001_eigen/... は「いま実行している 002_freqResponse フォルダから見て、1つ上の階層へ戻り、そこにある 001_eigen フォルダ内のファイルを読む」という意味です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:table {"hasFixedLayout":false} -->
+<figure class="wp-block-table"><table><thead><tr><th>002側のファイル</th><th>書いてある参照先</th><th>読み込むもの</th><th>役割</th></tr></thead><tbody><tr><td>FistrModel.cnt</td><td>../001_eigen/0.log</td><td>固有値・固有振動数</td><td>1〜20モードの周波数を使う</td></tr><tr><td>hecmw_ctrl.dat</td><td>../001_eigen/FistrModel.res</td><td>固有ベクトル</td><td>各モードの変形形状を使う</td></tr></tbody></table></figure>
+<!-- /wp:table -->
+
+<!-- wp:paragraph -->
+<p>一方、<strong>メッシュ（FistrModel.msh）の与え方には2通り</strong>あります。次の節で両方を説明します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">メッシュの与え方：001を参照するか、002に直接置くか</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>メッシュは001と002で同じものを使います。この同じメッシュを002にどう渡すかで、2通りのやり方があります。どちらでも計算結果は同じです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">方法1：001のメッシュを参照する</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>hecmw_ctrl.dat で001のメッシュを相対パスで指定します。002フォルダにはメッシュファイルを置きません。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>!MESH, NAME=fstrMSH, TYPE=HECMW-ENTIRE
+../001_eigen/FistrModel.msh</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:list {"className":"wp-block-list"} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>メッシュの実体が001だけにあるので、二重管理になりません。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>メッシュを修正するときは001だけ直せばよく、002は常に最新を参照します。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>フォルダ間の依存（../001_eigen）があるため、002だけを別の場所へ移すと動かなくなります。</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">方法2：002にメッシュを直接置く</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>001のメッシュを002フォルダにコピーし、hecmw_ctrl.dat では相対パスなしで指定します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>!MESH, NAME=fstrMSH, TYPE=HECMW-ENTIRE
+FistrModel.msh</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:list {"className":"wp-block-list"} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>002フォルダ内でメッシュが完結するので、フォルダをそのまま移動・共有できます。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><strong>easyIstrで002フォルダを直接読み込めます</strong>。easyIstrは作業フォルダ内に FistrModel.msh がある前提で動くため、GUIで設定を確認・修正したい場合はこの方法が必要です。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>メッシュを修正したときは001と002の両方を更新する必要があります（二重管理）。</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>今回は<strong>easyIstrで002フォルダを開けるようにするため、方法2（直接置く）を採用</strong>しています。GUIを使わずコマンドだけで完結させたい場合や、メッシュの二重管理を避けたい場合は方法1が向いています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>なお、どちらの方法でも<strong>固有ベクトル（hecmw_ctrl.dat の result-in, IO=IN）は001の ../001_eigen/FistrModel.res を参照</strong>します。ここは002にコピーせず、001を参照したままで問題ありません。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">FistrModel.cntで固有値・固有振動数を読む設定</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>周波数応答解析本体は FistrModel.cnt に書きます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>固有値・固有振動数を読む指定は !EIGENREAD です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>!EIGENREAD
+ ../001_eigen/0.log
+ 1, 20</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>この指定では、../001_eigen/0.log から固有値解析で得た固有値・固有振動数を読み込みます。次の 1, 20 は、1〜20モードを使うという意味です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>0.log には前回の固有値解析で得たモードごとの固有振動数が記録されています。今回の周波数応答解析は、この固有振動数を使って応答を計算します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">hecmw_ctrl.datで固有ベクトルを読む設定</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>!EIGENREAD だけでは、どの固有ベクトルを使うかまでは完結しません。固有ベクトルやメッシュの参照先は hecmw_ctrl.dat 側で指定します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>!MESH, NAME=fstrMSH, TYPE=HECMW-ENTIRE
+FistrModel.msh
+
+!CONTROL,NAME=fstrCNT
+FistrModel.cnt
+
+!RESULT,NAME=fstrRES,IO=OUT
+FistrModel.res
+
+!RESULT,NAME=fstrDYNA,IO=OUT
+FistrModel_dyna.res
+
+!RESULT,NAME=result-in,IO=IN
+../001_eigen/FistrModel.res</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>上から順に意味を整理します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list"} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>!MESH, NAME=fstrMSH：解析に使うメッシュを読む（今回は002に直接置いた FistrModel.msh。参照する場合は前節の方法1のように ../001_eigen/FistrModel.msh と書く）</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>!CONTROL, NAME=fstrCNT：002内の FistrModel.cnt を解析制御ファイルとして読む</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>!RESULT, NAME=fstrRES, IO=OUT：002の結果出力先を指定する</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>!RESULT, NAME=fstrDYNA, IO=OUT：動解析結果の出力先を指定する</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>!RESULT, NAME=result-in, IO=IN：001の固有ベクトル ../001_eigen/FistrModel.res を入力として読む</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>最後の result-in, IO=IN が重要です。ここで指定している FistrModel.res は、実体としては次のようなファイル群です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>../001_eigen/FistrModel.res.0.1
+../001_eigen/FistrModel.res.0.2
+...
+../001_eigen/FistrModel.res.0.20</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>この固有ベクトルと、!EIGENREAD で読んだ固有値を組み合わせて、周波数応答解析を行います。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">周波数応答解析の設定</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>周波数応答解析は !SOLUTION,TYPE=DYNAMIC と !DYNAMIC で指定します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>!SOLUTION,TYPE=DYNAMIC
+
+# 周波数応答解析の設定
+!DYNAMIC
+# 解析種別: 2 = 周波数応答
+ 11, 2
+# 周波数範囲: 開始Hz, 終了Hz, ステップ数, 変位計算Hz
+ 100, 1000, 90, 1000.0
+# 時間範囲
+ 0.0, 6.6e-5
+# 荷重ケースとRayleigh減衰: 実部, 虚部, Rm, Rk
+ 1, 1, 0.1, 0.0
+# モニタ出力: sampling数, 出力指定, nodeID
+ 10, 2, 2
+# 出力内容: 変位, 速度, 加速度, 反力, ひずみ, 応力
+ 1, 0, 0, 0, 0, 0</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>設定内容を整理すると次の通りです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list"} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>!SOLUTION,TYPE=DYNAMIC：動解析を行う指定です。周波数応答解析も DYNAMIC の中で設定します。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>11, 2：2 が周波数応答解析を表します。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>100, 1000, 90, 1000.0：100〜1000Hzの範囲を90ステップで計算します。1次固有振動数536Hzがこの範囲に入るようにしています。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>0.0, 6.6e-5：開始時間と終了時間です。easyIstrのサンプル設定に合わせています。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>1, 1, 0.1, 0.0：荷重ケースとRayleigh減衰の指定です。Rm=0.1, Rk=0.0 として減衰を与えています。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>10, 2, 2：モニタ出力の指定です。nodeID=2 の応答を出力します。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>1, 0, 0, 0, 0, 0：出力する物理量の指定です。今回は変位だけを出力します。</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">周期荷重の設定</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>荷重をどの面にどの向きで与えるかを図で示します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
+<figure class="wp-block-image size-large"><img src="img/固定_荷重.png" alt="FrontISTR周波数応答解析：fix端を完全拘束し、load面にZ方向の周期荷重を与える"/></figure>
+<!-- /wp:image -->
+
+<!-- wp:paragraph -->
+<p><em>左端の fix 面を完全拘束し、右端の load 面（自由端）にZ方向（板厚方向）の周期荷重（1N）を与えます。赤い矢印が加振位置と向きです。</em></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>荷重は !FLOAD で与えます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code># LOAD CASE=1 の周期荷重を与える
+!FLOAD, LOAD CASE=1
+# loadグループ, Z方向(DOF=3), 荷重振幅1.0
+load, 3, 1.0</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>設定内容を整理すると次の通りです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list"} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>!FLOAD, LOAD CASE=1：周期荷重を定義します。LOAD CASE=1 は、先ほどの !DYNAMIC で指定した荷重ケースと対応します。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>load：荷重を与える節点グループです。今回は片持ち板の自由端側の節点グループです。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>3：荷重方向です。FrontISTRでは 1=X方向, 2=Y方向, 3=Z方向 を表します。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>1.0：荷重振幅です。</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>前回の固有値解析では、1次モードがZ方向曲げでした。そのため、自由端側にZ方向の周期荷重を与えることで、1次モード付近の共振を確認しやすくしています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">出力を最小限にする設定</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>FrontISTRでは、設定を有効にすると周波数応答解析の結果をファイルとして細かく出力できます。代表的な出力は次の2種類です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list"} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>.res：各周波数点の解析結果</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>.pvtu/.vtu：ParaViewなどで開く可視化用ファイル</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>コンプライアンス曲線だけが目的なら、必要なのは基本的に 0.log です。そのため、現在は結果ファイルとVTK可視化出力をコメントアウトしています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>#!WRITE,RESULT
+#!WRITE,VISUAL
+#!WRITE, VISUAL, FREQUENCY=1</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>この3行の意味は次の通りです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list"} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>#!WRITE,RESULT：各周波数点の結果ファイルを出力しない設定です。有効にすると FistrModel.res.0.* が出力されます。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>#!WRITE,VISUAL：可視化用ファイルを出力しない設定です。有効にすると .pvtu/.vtu 出力につながります。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>#!WRITE, VISUAL, FREQUENCY=1：周波数ステップごとに可視化ファイルを出力しない設定です。有効にすると、各周波数点の可視化ファイルが大量に出力されます。</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>VTK出力設定もコメントアウトしています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>#!VISUAL,method=PSR
+#!surface_num=1
+#!surface 1
+#!output_type=VTK</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>この4行は、可視化ファイルの形式を指定する設定です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list"} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>#!VISUAL,method=PSR：可視化出力の方式を指定します。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>#!surface_num=1, #!surface 1：出力するサーフェス数と対象を指定します。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>#!output_type=VTK：VTK形式で出力する指定です。有効にするとParaViewで開ける .pvtu/.vtu が出力されます。</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>hecmw_ctrl.dat 側の可視化用指定もコメントアウトしています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>#!MESH, NAME=mesh, TYPE=HECMW-ENTIRE
+#FistrModel.msh
+
+#!RESULT,NAME=vis_out,IO=OUT
+#FistrModel.vis</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>この指定は、可視化用メッシュと可視化結果の出力名です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list"} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>#!MESH, NAME=mesh, TYPE=HECMW-ENTIRE：可視化用に使うメッシュを指定します。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>#FistrModel.msh：可視化用メッシュを読む指定です（方法1で参照する場合は #../001_eigen/FistrModel.msh と書きます）。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>#!RESULT,NAME=vis_out,IO=OUT：可視化結果の出力先を指定します。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>#FistrModel.vis：可視化結果のファイル名です。</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>この状態で再計算すると、.pvtu/.vtu は出力されません。変形分布をParaViewで見たい場合だけ、該当行の先頭 # を外します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">(null)_psf.* というファイルが出たとき</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>可視化出力を有効にしたまま実行すると、フォルダに次のようなファイル・フォルダが生成されることがあります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>(null)_psf.0001.pvtu
+(null)_psf.0001/
+(null)_psf.0002.pvtu
+...</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>これはFrontISTRが出す可視化用（VTK系）のファイルです。(null) が付いているのは、可視化出力の名前が空のままになっているためで、その状態で !WRITE, VISUAL 系が有効だと、周波数ステップごとにこの名前で出力されます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>コンプライアンス波形だけが目的なら不要なので、削除して問題ありません。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>cd 002_freqResponse
+rm -rf '(null)_psf.'*</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>再発を防ぐには、上で説明した !WRITE, VISUAL... と !VISUAL... をコメントアウトしたままにしておきます。こうすれば、次回以降 (null)_psf.* は生成されません。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">実行</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>FrontISTRを実行します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>cd 002_freqResponse
+~/local/frontistr/bin/fistr1</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>実行ログには、001の固有値ログを読んでいることが表示されます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>--frequency analysis--
+read from=../001_eigen/0.log
+start mode=           1
+end mode=          20
+start frequency:   100.00000000000000
+end frequency:   1000.0000000000000
+number of the sampling points          90
+monitor nodeid=           2</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>この read from=../001_eigen/0.log が、001の固有値結果を読んでいることを示しています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">結果：コンプライアンス波形</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>0.log から周波数と応答振幅を取り出し、グラフにしました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
+<figure class="wp-block-image size-large"><img src="img/compliance.png" alt="FrontISTR周波数応答解析：コンプライアンス波形"/></figure>
+<!-- /wp:image -->
+
+<!-- wp:paragraph -->
+<p>最大値は次の通りです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:table {"hasFixedLayout":false} -->
+<figure class="wp-block-table"><table><thead><tr><th>周波数</th><th>応答振幅</th></tr></thead><tbody><tr><td>540Hz</td><td>1.0928×10⁻²</td></tr></tbody></table></figure>
+<!-- /wp:table -->
+
+<!-- wp:paragraph -->
+<p>前回の固有値解析では1次固有振動数が約536Hzでした。今回の周波数応答では10Hz刻みで計算しているため、最も近いサンプル点である540Hzにピークが出ています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>この結果から、固有値解析で得た固有振動数の近くで応答が大きくなることを確認できました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">まとめ</h2>
+<!-- /wp:heading -->
+
+<!-- wp:list {"className":"wp-block-list"} -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>周波数応答解析は !SOLUTION,TYPE=DYNAMIC と !DYNAMIC で設定します。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>002では、001のメッシュ・固有値・固有ベクトルをそれぞれ入力として読み込みます。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>!EIGENREAD は ../001_eigen/0.log から固有値・固有振動数を読み込みます。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>hecmw_ctrl.dat の result-in, IO=IN は ../001_eigen/FistrModel.res から固有ベクトルを読み込みます。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>メッシュは「001を参照する方法」と「002に直接置く方法」の2通りがあります。easyIstrで002フォルダを開きたい場合は、直接置く方法を使います。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>002で再計算しているのは固有値解析ではなく、001の結果を使った周波数応答解析です。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>コンプライアンス曲線だけが目的なら、.res や .pvtu/.vtu は不要なのでコメントアウトして出力を抑えられます。</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>今回は540Hzで最大応答となり、1次固有振動数536Hz付近の共振を確認できました。</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->

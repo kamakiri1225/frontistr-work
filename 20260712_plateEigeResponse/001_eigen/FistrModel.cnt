@@ -1,0 +1,61 @@
+###############################################
+# Control File for FrontISTR                  #
+# plate 固有値解析 (Eigenvalue analysis)       #
+###############################################
+!VERSION
+ 3
+####################
+# Analysis Control #
+####################
+!WRITE,VISUAL
+!WRITE,RESULT
+!SOLUTION,TYPE=EIGEN
+##################
+# EIGEN CONTROL  #
+##################
+# 固有値数, 許容差, 最大反復数
+# 周波数応答(14-16kHz)で使うため多めに20モード取得
+!EIGEN
+ 20, 1.0e-8, 100
+##################
+# SOLVER CONTROL #
+##################
+!SOLVER,METHOD=DIRECT,ITERLOG=NO,TIMELOG=YES
+ 20000, 1
+ 1.00000e-06, 1.00000, 0.00000
+##################
+# Output Control #
+##################
+!OUTPUT_RES
+DISP, ON
+!OUTPUT_VIS
+DISP, ON
+######################
+# Boundary Condition #
+######################
+# fix グループを完全固定（X/Y/Z）
+!BOUNDARY, GRPID=1
+fix, 1, 1, 0.0
+fix, 2, 2, 0.0
+fix, 3, 3, 0.0
+############
+# Material #
+############
+# 単位系: mm-kg-s（座標がmmのため）
+#   ヤング率 [kg/(mm*s^2)], 密度 [kg/mm^3], 力=mN, 応力=kPa
+!MATERIAL, NAME=Steel
+!ELASTIC, TYPE=ISOTROPIC
+2.06e8, 0.29
+!DENSITY
+7.86e-6
+#########################
+# Post Process Settings #
+#########################
+!VISUAL, method=PSR
+!surface_num=1
+!surface 1
+!display_method=1
+!surface_style=1
+!initial_style=1
+!output_type = VTK
+!END

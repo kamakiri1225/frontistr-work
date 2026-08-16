@@ -1,0 +1,34 @@
+#
+# Global Control Data File - plate 周波数応答解析
+#   メッシュと固有値解析結果は ../001_eigen を参照する
+#
+!MESH, NAME=fstrMSH, TYPE=HECMW-ENTIRE
+FistrModel.msh
+#
+# 可視化出力をONにする場合:
+#   下の2行の先頭 # を外す
+#   例: #!MESH, NAME=mesh,... -> !MESH, NAME=mesh,...
+#
+#!MESH, NAME=mesh, TYPE=HECMW-ENTIRE
+#FistrModel.msh
+#
+# for solver
+#
+!CONTROL,NAME=fstrCNT
+FistrModel.cnt
+!RESULT,NAME=fstrRES,IO=OUT
+FistrModel.res
+!RESULT,NAME=fstrDYNA,IO=OUT
+FistrModel_dyna.res
+#
+# 固有値解析(001_eigen)の結果(固有ベクトル)を読み込む
+#
+!RESULT,NAME=result-in,IO=IN
+../001_eigen/FistrModel.res
+#
+# 可視化出力をONにする場合:
+#   下の2行の先頭 # を外す
+#   例: #!RESULT,NAME=vis_out,... -> !RESULT,NAME=vis_out,...
+#
+#!RESULT,NAME=vis_out,IO=OUT
+#FistrModel.vis
