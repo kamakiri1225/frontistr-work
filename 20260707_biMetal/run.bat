@@ -1,0 +1,2 @@
+python3 C:\DEXCS\easyIstrPython\easyIstr\python\copyFilesFromTempToCurrDir.py D:\work\easyIstrUser\data\temp D:\work\002_CAE\frontistr\work\20260707_biMetal
+python3 C:\DEXCS\easyIstrPython\easyIstr\python\commTee.py fistr1 -t 1 FistrModel.log
