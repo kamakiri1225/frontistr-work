@@ -124,39 +124,44 @@ python3 post/write_sensitivity_vtk.py --wdiff model/009_Tji_H_direct/Wdiff_fistr
 詳しい数値は[`model/008_Tji_compare/README.md`](../model/008_Tji_compare/README.md)と
 [`model/009_Tji_H_direct/README.md`](../model/009_Tji_H_direct/README.md)を参照。
 
-## 4. Tjiリファインメッシュ（3314節点）用
+## 4. Tjiリファインメッシュ（22,123節点）用
 
 対象モデル: `model/010_Tji_fine_H_direct`。570節点モデルの各四面体要素を8分割する
-一様細分割（red refinement）で3314節点・13592要素に増やし、より大きい問題サイズでも
-Python実装とFrontISTR(DUMPH改造版)が一致するか確認する。標準機能で節点を1つずつ計算する方法は
-節点数に比例して遅くなる（3314節点だと8分×(3314/570)≈47分の見込み）ため、
-このモデルではDUMPH改造版のみを使う。
+一様細分割（red refinement）を**2回繰り返し**（`--levels 2`）て22,123節点・108,736要素に
+増やし、より大きい問題サイズでもPython実装とFrontISTR(DUMPH改造版)が一致するか、
+計算時間がどう変わるかを確認する。標準機能で節点を1つずつ計算する方法は非現実的な時間に
+なるため、このモデルではDUMPH改造版のみを使う。Wの求解も、節点数と同じ回数solveする方式
+（`compute_kinvH_tji.py`）ではなく、**アジョイント法**（`wdiff_adjoint.py`、節点数によらず
+6回のsolveで済む）に切り替えている（詳しい数式は`docs/12_...md`のセクション3参照）。
 
 | スクリプト | 用途 | 主な入出力 |
 |---|---|---|
-| `refine_tji_mesh.py` | `Quad4_FEM_Tji.inp`の各C3D4要素を、各辺の中点を追加して8個の子要素に分割する（red refinement）。Fixed・Point_A・Point_Oは元の節点番号のまま引き継ぐ。 | 出力: `model/010_Tji_fine_H_direct/FistrModel.msh`, `hecmw_ctrl.dat`, `mesh_fine.npz`（Python計算用の中間形式） |
-| `python_H_tji_fine.py` | `mesh_fine.npz`を読み、`python_H_tji.py`と同じ数式でH・K（境界条件適用後）・W=K⁻¹Hを計算する。 | 出力: `model/010_Tji_fine_H_direct/H_python_tji_fine.npz`, `K_python_tji_fine_bc.mtx`, `Wdiff_python_tji_fine.npy` |
+| `refine_tji_mesh.py` | `Quad4_FEM_Tji.inp`の各C3D4要素を、各辺の中点を追加して8個の子要素に分割する（red refinement）。`--levels N`でN回繰り返す（既定1）。Fixed・Point_A・Point_Oは元の節点番号のまま引き継ぐ。 | 出力: `model/010_Tji_fine_H_direct/FistrModel.msh`, `hecmw_ctrl.dat`, `mesh_fine.npz`（Python計算用の中間形式）, `Quad4_FEM_Tji_fine.inp`（`ThermoSenseAnalyzer_00.py`用のAbaqus形式） |
+| `python_H_tji_fine.py` | `mesh_fine.npz`を読み、`python_H_tji.py`と同じ数式でH・K（境界条件適用後）を組み立て、Wdiffはアジョイント法で計算する。`--young`/`--cte`で材料定数を上書きできる（`mesh_fine.npz`の既定値は元inpの値）。 | 出力: `model/010_Tji_fine_H_direct/H_python_tji_fine.npz`, `K_python_tji_fine_bc.mtx`, `Wdiff_python_tji_fine.npy` |
+| `wdiff_adjoint.py` | FrontISTR側のK・Hから、アジョイント法でWdiffを計算する（`compute_kinvH_tji.py`の高速版）。Kが対称であることを使い、Point_A/Point_Oの6自由度分だけ`Kz=e`を解いてから`H`を1回掛ける。列数（節点数）に関係なく常に6回のsolveで済む。`--mesh-npz`でリファインメッシュにも対応。 | `--workdir <folder> --k <K.mtx> --h <H.mtx/npz> --out <Wdiff.npy> [--mesh-npz mesh_fine.npz]` |
 
-`compute_kinvH_tji.py`と`write_sensitivity_vtk.py`は`--mesh-npz mesh_fine.npz`を
-付ければそのままこのモデルにも使える（3節参照）。
+`write_sensitivity_vtk.py`も`--mesh-npz mesh_fine.npz`を付ければそのままこのモデルにも
+使える（3節参照）。
 
 ### リファインメッシュの実行手順
 
 ```bash
 cd 20260810_KinvH
 
-# 1. リファインメッシュを作る
-python3 post/refine_tji_mesh.py
+# 1. リファインメッシュを作る（2段リファイン、約0.1秒）
+python3 post/refine_tji_mesh.py --levels 2
 
-# 2. Python側でH・K・Wを計算（約40秒）
-python3 post/python_H_tji_fine.py
+# 2. Python側でH・K・Wを計算（アジョイント法、4スレッドなら約210秒）
+OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 python3 post/python_H_tji_fine.py
+#   材料定数を変えたい場合（例: ThermoSenseAnalyzer_00.pyのハードコード値に合わせる）:
+#   python3 post/python_H_tji_fine.py --young 130000.0 --cte 1.0e-05
 
-# 3. FrontISTR側でK・Hを1回の実行で同時取得（約12秒）
-cd model/010_Tji_fine_H_direct && $HOME/local/frontistr-dumph/bin/fistr1 && \
+# 3. FrontISTR側でK・Hを1回の実行で同時取得（4スレッドで約92〜125秒）
+cd model/010_Tji_fine_H_direct && OMP_NUM_THREADS=4 $HOME/local/frontistr-dumph/bin/fistr1 && \
   mv dump_matrix_1_0.mm K_fistr_tji_fine.mm && cd -
 
-# 4. FrontISTR側のWdiff（約32秒）
-python3 post/compute_kinvH_tji.py \
+# 4. FrontISTR側のWdiff（アジョイント法、4スレッドで約59秒）
+OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 python3 post/wdiff_adjoint.py \
   --workdir model/010_Tji_fine_H_direct \
   --k K_fistr_tji_fine.mm --h H_matrix.mtx \
   --out Wdiff_fistr_tji_fine.npy --mesh-npz mesh_fine.npz
@@ -170,6 +175,11 @@ python3 post/write_sensitivity_vtk.py \
   --wdiff model/010_Tji_fine_H_direct/Wdiff_fistr_tji_fine.npy \
   --out   model/010_Tji_fine_H_direct/Wdiff_fistr_tji_fine.vtk \
   --field-name Sensitivity_FrontISTR --mesh-npz model/010_Tji_fine_H_direct/mesh_fine.npz
+
+# 6. （参考）ThermoSenseAnalyzer_00.py自体を同じメッシュ・材料定数で実行して比較
+cp model/010_Tji_fine_H_direct/Quad4_FEM_Tji_fine.inp sample/002_thermalSensitive/Inp_Data/
+cd sample/002_thermalSensitive
+python3 ThermoSenseAnalyzer_00_fixed.py Quad4_FEM_Tji_fine.inp 4   # 並列数=4プロセス
 ```
 
 詳しい数値・計算時間は[`model/010_Tji_fine_H_direct/README.md`](../model/010_Tji_fine_H_direct/README.md)と
