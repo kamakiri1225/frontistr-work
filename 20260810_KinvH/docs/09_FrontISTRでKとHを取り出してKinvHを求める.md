@@ -355,10 +355,10 @@ $\boldsymbol K$ が取り出せたので、次は $\boldsymbol H$ です。と�
 
 先に結論です。**FrontISTRには「$\boldsymbol H$ をそのままファイルに書き出す」キーワードはありません。**
 
-これは、FrontISTRのソースコードを検索して確かめました。WSLに落としてあるソース（`/home/kamakiri/src/FrontISTR`）の中を、`grep` で「行列出力に関わっていそうな文字列」を横断検索していきます。
+これは、FrontISTRのソースコードを検索して確かめました。WSLに落としてあるソース（`$HOME/src/FrontISTR`）の中を、`grep` で「行列出力に関わっていそうな文字列」を横断検索していきます。
 
 ```bash
-cd /home/kamakiri/src/FrontISTR
+cd $HOME/src/FrontISTR
 # !SOLVER の DUMPTYPE がどこで読まれているか探す
 grep -rn "DUMPTYPE" --include=*.f90 --include=*.F90 .
 ```
@@ -844,10 +844,10 @@ enddo
 
 今回実際にコンパイルした環境は、Ubuntu 24.04.3 LTSを動かしたWSL2、GNU Fortran 13.3.0、GCC/G++ 13.3.0、CMake 3.28.3です。FrontISTRはバージョン5.9、Gitコミット `7f48eae0` を使いました。
 
-ここでは、FrontISTR標準ソースが `/home/kamakiri/src/FrontISTR` にあるものとします。まず、パッチがそのソースに適用できるかを確認します。
+ここでは、FrontISTR標準ソースが `$HOME/src/FrontISTR` にあるものとします。まず、パッチがそのソースに適用できるかを確認します。
 
 ```bash
-cd /home/kamakiri/src/FrontISTR
+cd $HOME/src/FrontISTR
 
 git apply --check \
   /mnt/d/work/002_CAE/frontistr/work/20260810_KinvH/patch/frontistr_dumph_341.patch
@@ -878,7 +878,7 @@ git diff --stat
 ```bash
 cmake -S . -B build-dumph \
   -DCMAKE_BUILD_TYPE=RELEASE \
-  -DCMAKE_INSTALL_PREFIX=/home/kamakiri/local/frontistr-dumph \
+  -DCMAKE_INSTALL_PREFIX=$HOME/local/frontistr-dumph \
   -DWITH_MPI=OFF \
   -DWITH_OPENMP=ON \
   -DWITH_LAPACK=ON \
@@ -907,7 +907,7 @@ cmake --install build-dumph
 
 - `cmake --build build-dumph` は、CMakeが作った設定を使ってFrontISTRをコンパイルします。
 - `-j2` はビルド処理を2つ並行します。
-- `cmake --install build-dumph` は、コンパイル済みの実行ファイルを `/home/kamakiri/local/frontistr-dumph` へコピーします。
+- `cmake --install build-dumph` は、コンパイル済みの実行ファイルを `$HOME/local/frontistr-dumph` へコピーします。
 
 コンパイルの最後に次が表示されれば、`fistr1` の作成は成功です。
 
@@ -921,17 +921,17 @@ cmake --install build-dumph
 /tmp/frontistr-hsrc.1Rzr0X/build-h/fistr1/fistr1
 ```
 
-`/home/kamakiri/local/frontistr-dumph` へのインストールは、読者が同じ環境を再現するための手順であり、今回はまだ実施していません。通常版と別の場所へ入れるのは、既存のFrontISTRを上書きしないためです。
+`$HOME/local/frontistr-dumph` へのインストールは、読者が同じ環境を再現するための手順であり、今回はまだ実施していません。通常版と別の場所へ入れるのは、既存のFrontISTRを上書きしないためです。
 
 恒久インストールまで完了した場合は、主サンプルのフォルダへ移動し、改造版の `fistr1` をフルパスで実行します。
 
 ```bash
 cd /mnt/d/work/002_CAE/frontistr/work/20260810_KinvH/model/005_H_direct
-/home/kamakiri/local/frontistr-dumph/bin/fistr1 2>&1 | tee run_dumph.log
+$HOME/local/frontistr-dumph/bin/fistr1 2>&1 | tee run_dumph.log
 ```
 
 - `cd` はFrontISTRの3つの入力ファイルがある `005_H_direct` へ移動します。
-- `/home/kamakiri/local/frontistr-dumph/bin/fistr1` は、通常版ではなく今回コンパイルした改造版を明示しています。
+- `$HOME/local/frontistr-dumph/bin/fistr1` は、通常版ではなく今回コンパイルした改造版を明示しています。
 - `2>&1` は標準エラー出力を標準出力にまとめます。
 - `tee run_dumph.log` は実行中の表示を画面で見ながら、同じ内容を `run_dumph.log` に保存します。
 

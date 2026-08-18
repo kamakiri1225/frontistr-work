@@ -23,11 +23,11 @@ K · u      = f_thermal        （平衡方程式）
 
 ## 環境
 
-- ソース: `/home/kamakiri/src/FrontISTR`（git `7f48eae0`）
+- ソース: `$HOME/src/FrontISTR`（git `7f48eae0`）
 - ビルド: CMake、ビルドディレクトリ `build-codex`
   - コンパイラ `/usr/bin/f95`(gfortran)、`CMAKE_BUILD_TYPE=RELEASE`
   - `WITH_MPI=OFF`, `WITH_MKL=OFF`, `WITH_MUMPS=OFF`, `WITH_LAPACK=ON`
-  - install prefix: `/home/kamakiri/local/frontistr`
+  - install prefix: `$HOME/local/frontistr`
 - 単一ドメイン（MPI無効）なので、全体行列がそのままローカル行列＝グローバル行列。並列組み立ての考慮不要。
 - 再ビルド: `cd build-codex && make -j` （動作確認済み）
 
@@ -126,7 +126,7 @@ X = spsolve(K, H)                  # 列ごとに K X = H を解く → X = K⁻
 - [x] Fortran改造の試作（`DUMPH=YES`、要素タイプ341）
 - [x] 検証用コピーで再ビルドし、`H_matrix.mtx` を出力
 - [x] `H[:,2]` と標準FrontISTRの温度荷重RHSが完全一致
-- [ ] `/home/kamakiri/src/FrontISTR` 本体へ検証済みパッチを適用・インストール
+- [ ] `$HOME/src/FrontISTR` 本体へ検証済みパッチを適用・インストール
 - [ ] K⁻¹HとFrontISTR変位の比較（Python後処理を行う段階で実施）
 
 ## 未確定事項（要ユーザー確認）

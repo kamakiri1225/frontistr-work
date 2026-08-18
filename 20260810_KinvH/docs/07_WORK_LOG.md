@@ -39,7 +39,7 @@
 - `post/kinvh.py` を作成（K,H の MatrixMarket を読み、LU分解を再利用して X=K⁻¹H を列ごとに解く）。
   - **self-test 合格**：合成SPD行列で `||X−X_ref||/||X_ref|| = 3.7e-16`、`||KX−H||/||H|| = 4.4e-16`。
 - ビルド確認：`build-codex` で `make` が通ることを確認（改造後の再ビルドが可能）。
-- VS Code：ソースを WSL リモートで開く方法に切り替え（`code /home/kamakiri/src/FrontISTR`）。
+- VS Code：ソースを WSL リモートで開く方法に切り替え（`code $HOME/src/FrontISTR`）。
 
 ## 4. 設計上の論点（境界条件の扱い）
 
@@ -148,7 +148,7 @@ FrontISTR と 自作Python(`Quad4_main.py`) の全体剛性行列 K を比較 �
 
 ### ソースへの反映状況
 
-- `/home/kamakiri/src/FrontISTR` 本体にはまだパッチを適用していない。
+- `$HOME/src/FrontISTR` 本体にはまだパッチを適用していない。
 - 検証は `/tmp` のソースコピーで実施し、通常版FrontISTRを変更していない。
 - 本体へ反映するときは、手順書の `git apply --check` から実施する。
 - Claude Codeなどへの短い引き継ぎは `docs/08_HANDOFF.md` を参照する。

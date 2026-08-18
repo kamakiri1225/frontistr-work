@@ -138,7 +138,7 @@ FrontISTRは各要素の温度荷重を計算し、それを全体の右辺ベ�
 使用したFrontISTRソースは次の場所にある。
 
 ```text
-/home/kamakiri/src/FrontISTR
+$HOME/src/FrontISTR
 ```
 
 ソースのコミットは `7f48eae0`、FrontISTRのバージョンは5.9である。
@@ -150,7 +150,7 @@ FrontISTRは各要素の温度荷重を計算し、それを全体の右辺ベ�
 確認したファイルは次のとおり。
 
 ```text
-/home/kamakiri/src/FrontISTR/
+$HOME/src/FrontISTR/
 └── fistr1/src/common/
     └── fstr_ctrl_common.f90
 ```
@@ -175,7 +175,7 @@ character(24) :: dlist = '0,1,2,3,NONE,MM,CSR,BSR '
 次に、実際にファイルを書き出す処理を確認した。
 
 ```text
-/home/kamakiri/src/FrontISTR/
+$HOME/src/FrontISTR/
 └── hecmw1/src/solver/matrix/
     └── hecmw_matrix_dump.f90
 ```
@@ -213,7 +213,7 @@ end subroutine
 温度荷重を組み立てる処理は次のファイルにある。
 
 ```text
-/home/kamakiri/src/FrontISTR/
+$HOME/src/FrontISTR/
 └── fistr1/src/analysis/static/
     └── fstr_ass_load.f90
 ```
@@ -239,7 +239,7 @@ B(iwk(j)) = B(iwk(j)) + vect(j)
 四面体一次要素341の温度荷重計算は、次のファイルにある。
 
 ```text
-/home/kamakiri/src/FrontISTR/
+$HOME/src/FrontISTR/
 └── fistr1/src/lib/
     └── static_LIB_3d.f90
 ```
@@ -338,7 +338,7 @@ $$
 
 ```bash
 cd /mnt/d/work/002_CAE/frontistr/work/20260810_KinvH/model/003_Htest
-/home/kamakiri/local/frontistr/bin/fistr1
+$HOME/local/frontistr/bin/fistr1
 ```
 
 出力される `dump_matrix_1_0.rhs` は長さ1275のベクトルであり、Hの第2列に相当する。
@@ -360,7 +360,7 @@ cd /mnt/d/work/002_CAE/frontistr/work/20260810_KinvH/model/003_Htest
 ### 7.1 変更したFrontISTRファイル
 
 ```text
-/home/kamakiri/src/FrontISTR/
+$HOME/src/FrontISTR/
 └── fistr1/src/
     ├── common/
     │   ├── fstr_ctrl_common.f90

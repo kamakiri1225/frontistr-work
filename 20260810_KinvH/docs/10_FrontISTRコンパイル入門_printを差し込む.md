@@ -34,7 +34,7 @@ FrontISTRはソースコードが公開されているので、自分で書き�
 FrontISTRのソースは、次の場所にあるものとします。
 
 ```text
-/home/kamakiri/src/FrontISTR
+$HOME/src/FrontISTR
 ```
 
 FrontISTRはFortran言語で書かれているため、Fortranに慣れている人であればソースコードをかなり読み解きやすいと思います。
@@ -51,10 +51,10 @@ FrontISTRの実行ファイル `fistr1` を起動すると、最初にC言語の
 fistr1/src/main/fistr_main.f90
 ```
 
-このパスは、FrontISTRソースの `/home/kamakiri/src/FrontISTR` を起点とした相対パスです。フォルダ構成の中での位置は、次のようになっています。
+このパスは、FrontISTRソースの `$HOME/src/FrontISTR` を起点とした相対パスです。フォルダ構成の中での位置は、次のようになっています。
 
 ```text
-/home/kamakiri/src/FrontISTR/     ← FrontISTRソースの起点
+$HOME/src/FrontISTR/     ← FrontISTRソースの起点
 ├── CMakeLists.txt                  ビルドルール
 ├── fistr1/                         FrontISTR本体（構造・熱解析など）
 │   └── src/
@@ -115,7 +115,7 @@ fistr1/src/main/fistr_main.f90
 **はじめての場合**（設定してからビルド）:
 
 ```bash
-cd /home/kamakiri/src/FrontISTR
+cd $HOME/src/FrontISTR
 
 cmake -S . -B build_test \
   -DCMAKE_BUILD_TYPE=RELEASE \
@@ -161,7 +161,7 @@ cmake --build build_test --target fistr1 -j2
 
 ```bash
 cd /mnt/d/work/002_CAE/frontistr/work/20260810_KinvH/model/007_compile_test
-/home/kamakiri/src/FrontISTR/build_test/fistr1/fistr1
+$HOME/src/FrontISTR/build_test/fistr1/fistr1
 ```
 
 1行目は、FrontISTRの入力ファイルがある解析フォルダへ移動しています。FrontISTRは通常、実行時の現在地から `hecmw_ctrl.dat` を探し、そこに書かれたメッシュや制御ファイルを読み込みます。そのため、実行ファイルがある `build_test` ではなく、解析入力のある `007_compile_test` へ移動します。
@@ -589,17 +589,17 @@ CMake自体がFrontISTRのFortranソースを直接コンパイルするわけ�
 ```text
 1. CMake設定
    FrontISTRのソース
-   /home/kamakiri/src/FrontISTR
+   $HOME/src/FrontISTR
              ↓ cmake -S . -B build_test
 
 2. コンパイル
    ビルド用フォルダ
-   /home/kamakiri/src/FrontISTR/build_test
+   $HOME/src/FrontISTR/build_test
              ↓ cmake --build build_test
 
 3. インストール
    完成した実行ファイルを利用場所へコピー
-   /home/kamakiri/local/frontistr
+   $HOME/local/frontistr
              ↑ cmake --install build_test
 ```
 
@@ -630,7 +630,7 @@ CMake自体がFrontISTRのFortranソースを直接コンパイルするわけ�
 ### CMakeの設定コマンド
 
 ```bash
-cd /home/kamakiri/src/FrontISTR
+cd $HOME/src/FrontISTR
 
 cmake -S . -B build_test \
   -DCMAKE_BUILD_TYPE=RELEASE \
@@ -658,7 +658,7 @@ cmake -S . -B build_test \
 | `WITH_LAPACK=ON` | LAPACKを有効にする |
 | `CMAKE_INSTALL_PREFIX=...` | `cmake --install` を実行したときのコピー先を指定する |
 
-`$HOME` はホームフォルダを表す環境変数です。今回の環境では、`$HOME/local/frontistr` は `/home/kamakiri/local/frontistr` と同じ意味です。
+`$HOME` はホームフォルダを表す環境変数です。今回の環境では、`$HOME/local/frontistr` は `$HOME/local/frontistr` と同じ意味です。
 
 ### `build_test` フォルダの役割
 
@@ -669,7 +669,7 @@ cmake -S . -B build_test \
 設定後のフォルダには、おおむね次のものが入ります。
 
 ```text
-/home/kamakiri/src/FrontISTR/
+$HOME/src/FrontISTR/
 ├── CMakeLists.txt               FrontISTRのビルドルール
 ├── fistr1/                      FrontISTRのソースコード
 ├── hecmw1/                      HEC-MWのソースコード
@@ -722,19 +722,19 @@ cmake --build build_test -j2
 cmake --install build_test
 ```
 
-今回の指定では、完成品は `/home/kamakiri/local/frontistr` の下へ配置されます。したがって2つの場所の役割は次のように異なります。
+今回の指定では、完成品は `$HOME/local/frontistr` の下へ配置されます。したがって2つの場所の役割は次のように異なります。
 
 | 場所 | 役割 |
 |---|---|
-| `/home/kamakiri/src/FrontISTR/build_test` | CMakeの設定、コンパイル途中のファイル、コンパイル結果を置く作業場所 |
-| `/home/kamakiri/local/frontistr` | 完成したFrontISTRを日常の解析で使うためのインストール先 |
+| `$HOME/src/FrontISTR/build_test` | CMakeの設定、コンパイル途中のファイル、コンパイル結果を置く作業場所 |
+| `$HOME/local/frontistr` | 完成したFrontISTRを日常の解析で使うためのインストール先 |
 
 ### 2回目以降のビルド（変更後の再ビルド）
 
 一度ビルドしてある場合、ソースを書き換えたあとは `fistr1` をビルド対象に指定して再ビルドできます。
 
 ```bash
-cd /home/kamakiri/src/FrontISTR
+cd $HOME/src/FrontISTR
 cmake --build build_test --target fistr1 -j2
 ```
 
@@ -747,7 +747,7 @@ CMakeが管理している依存関係により、変更したソースとその
 次の書き方も、今回のMakefile構成ではほぼ同じ処理です。
 
 ```bash
-cd /home/kamakiri/src/FrontISTR/build_test
+cd $HOME/src/FrontISTR/build_test
 make fistr1
 ```
 
@@ -847,7 +847,7 @@ make fistr1
 「実行して確認する」では、わざわざ長いフルパスを打って実行しました。
 
 ```bash
-/home/kamakiri/src/FrontISTR/build_test/fistr1/fistr1
+$HOME/src/FrontISTR/build_test/fistr1/fistr1
 ```
 
 一方、ふだんは `fistr1` とだけ打って動かしている人も多いと思います。この2つは、**別の実行ファイルを指していることがある**ので注意が必要です。
@@ -864,7 +864,7 @@ which fistr1     # 「fistr1」と打つとどの実行ファイルが動くか�
 たとえば次のように表示されたら、`fistr1`（パスなし）で動くのはインストール済みの版です。
 
 ```text
-/home/kamakiri/local/frontistr/bin/fistr1
+$HOME/local/frontistr/bin/fistr1
 ```
 
 これは、CMake設定で指定した `-DCMAKE_INSTALL_PREFIX=$HOME/local/frontistr` の場所です。`build_test` の中の書き換えた版とは別物なので、**`fistr1` とだけ打つと、書き換えた版ではなく元の版が動きます**。どちらが動いているかは、実行時に最初に出る `build:` の `date:` でも見分けられます（書き換えてビルドし直した日付なら書き換えた版、それより古い日付なら元の版）。
@@ -877,10 +877,10 @@ which fistr1     # 「fistr1」と打つとどの実行ファイルが動くか�
 
 ```text
 コピー元（ビルドした書き換え版）
-/home/kamakiri/src/FrontISTR/build_test/fistr1/fistr1
+$HOME/src/FrontISTR/build_test/fistr1/fistr1
                           ↓ cmake --install build_test
 コピー先（日常的に fistr1 で呼ぶ版）
-/home/kamakiri/local/frontistr/bin/fistr1
+$HOME/local/frontistr/bin/fistr1
 ```
 
 `cmake --install` は `fistr1` だけを手作業でコピーするコマンドではありません。CMakeが生成したインストール手順に従い、実行ファイルと必要な関連ファイルを `CMAKE_INSTALL_PREFIX` の下へ配置します。今回の `CMAKE_INSTALL_PREFIX` は `$HOME/local/frontistr` です。
@@ -890,7 +890,7 @@ which fistr1     # 「fistr1」と打つとどの実行ファイルが動くか�
 インストールの前に、最新のソースから `build_test/fistr1/fistr1` を作り直します。
 
 ```bash
-cd /home/kamakiri/src/FrontISTR
+cd $HOME/src/FrontISTR
 cmake --build build_test --target fistr1 -j2
 ```
 
@@ -911,13 +911,13 @@ command -v fistr1
 今回の環境では、次が表示されます。
 
 ```text
-/home/kamakiri/local/frontistr/bin/fistr1
+$HOME/local/frontistr/bin/fistr1
 ```
 
 続けて、ビルドフォルダの書き換え版と、現在インストールされている版のビルド日時を比較します。
 
 ```bash
-/home/kamakiri/src/FrontISTR/build_test/fistr1/fistr1 -v
+$HOME/src/FrontISTR/build_test/fistr1/fistr1 -v
 fistr1 -v
 ```
 
@@ -933,11 +933,11 @@ build_testの書き換え版: 2026-08-13T22:34:23+0900
 #### 3. `build_test` の書き換え版をインストールする
 
 ```bash
-cd /home/kamakiri/src/FrontISTR
+cd $HOME/src/FrontISTR
 cmake --install build_test
 ```
 
-このコマンドは、`build_test` に作成されたインストール設定を読み、コンパイル済みの `build_test/fistr1/fistr1` を含む必要ファイルを `/home/kamakiri/local/frontistr` の下へ配置します。既に `/home/kamakiri/local/frontistr/bin/fistr1` がある場合は、その実行ファイルが書き換えた版に更新されます。
+このコマンドは、`build_test` に作成されたインストール設定を読み、コンパイル済みの `build_test/fistr1/fistr1` を含む必要ファイルを `$HOME/local/frontistr` の下へ配置します。既に `$HOME/local/frontistr/bin/fistr1` がある場合は、その実行ファイルが書き換えた版に更新されます。
 
 #### 4. インストール後に反映を確認する
 
@@ -949,7 +949,7 @@ fistr1 -v
 `command -v fistr1` が引き続き次を示し、`fistr1 -v` の `build:` 内の `date:` が `build_test` 版と同じ日時になっていれば、反映できています。
 
 ```text
-/home/kamakiri/local/frontistr/bin/fistr1
+$HOME/local/frontistr/bin/fistr1
 ```
 
 最後に解析フォルダで `fistr1` を実行し、追加したprint文が表示されることを確認します。
@@ -964,7 +964,7 @@ fistr1
 ただし1つ注意があります。インストールすると `~/local/frontistr/bin/fistr1` が上書きされるので、**このシステムで `fistr1` を使う他の作業も、すべて書き換えた版に切り替わります**（計算結果は変わりませんが、書き足した表示が混ざります）。他の作業に影響させたくない場合は、インストールせず、これまでどおりフルパスで実行するか、別名を付けて使い分けます。たとえば次のようにエイリアスを作れば、`fistr1`（元の版）はそのままで、`fistr1c` で書き換えた版を呼べます。
 
 ```bash
-alias fistr1c='/home/kamakiri/src/FrontISTR/build_test/fistr1/fistr1'
+alias fistr1c='$HOME/src/FrontISTR/build_test/fistr1/fistr1'
 ```
 
 ---
@@ -1059,7 +1059,7 @@ alias fistr1c='/home/kamakiri/src/FrontISTR/build_test/fistr1/fistr1'
 書き換えたら、これまでと同じように `fistr1` を作り直します。
 
 ```bash
-cd /home/kamakiri/src/FrontISTR
+cd $HOME/src/FrontISTR
 cmake --build build_test --target fistr1 -j2
 ```
 
@@ -1090,21 +1090,21 @@ cmake --build build_test --target fistr1 -j2
 まず変更内容を確認します。
 
 ```bash
-cd /home/kamakiri/src/FrontISTR
+cd $HOME/src/FrontISTR
 git diff -- fistr1/src/main/fistr_main.f90
 ```
 
 このファイルに今回の練習以外の変更がないことを確認した上で、書き足した行をエディタで削除します。その後、次で作り直します。
 
 ```bash
-cd /home/kamakiri/src/FrontISTR
+cd $HOME/src/FrontISTR
 cmake --build build_test --target fistr1 -j2
 ```
 
 もし練習前の状態にそのまま戻したいだけなら、`git` で1つのファイルを元に戻すのが簡単です。
 
 ```bash
-cd /home/kamakiri/src/FrontISTR
+cd $HOME/src/FrontISTR
 git checkout fistr1/src/main/fistr_main.f90
 cmake --build build_test --target fistr1 -j2
 ```

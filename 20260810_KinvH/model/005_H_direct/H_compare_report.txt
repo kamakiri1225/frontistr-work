@@ -1,0 +1,7 @@
+H_direct (DUMPH直接出力): (1275, 425)  nnz=67344  (/mnt/d/work/002_CAE/frontistr/work/20260810_KinvH/model/005_H_direct/H_matrix.mtx)
+H_brute  (425回ブルートフォース): (1275, 425)  nnz=13606  (/mnt/d/work/002_CAE/frontistr/work/20260810_KinvH/model/004_H/H_fistr.mtx)
+
+最大絶対差 max|H_direct - H_brute| = 2.207869e-10
+相対差(Frobenius) ||H_direct - H_brute|| / ||H_brute|| = 1.472196e-12
+
+=> 一致（数値誤差レベル）。DUMPHの直接出力は標準機能ベースのHと同じ。

@@ -170,7 +170,7 @@ DUMPH: wrote H_matrix.mtx, shape=1275 425
 - `H_matrix.mtx`、K、RHSの出力
 - Hの第2列と標準温度荷重RHSの一致
 
-一方、`/home/kamakiri/local/frontistr-dumph` へのインストールは、
+一方、`$HOME/local/frontistr-dumph` へのインストールは、
 恒久的に使うための再現手順として第6章に記載しているが、まだ実施していない。
 したがって、第6章のインストール先に実行ファイルが存在するとは限らない。
 
@@ -229,7 +229,7 @@ $$
 今回関係するフォルダは次のとおり。
 
 ```text
-/home/kamakiri/src/FrontISTR/                 FrontISTR標準ソース
+$HOME/src/FrontISTR/                 FrontISTR標準ソース
 ├── fistr1/src/analysis/static/
 │   └── fstr_ass_load.f90                     温度荷重計算とH出力処理
 ├── fistr1/src/common/
@@ -281,7 +281,7 @@ H_matrix.mtx を出力する
 ファイルの場所は次のとおり。
 
 ```text
-/home/kamakiri/src/FrontISTR/fistr1/src/common/fstr_ctrl_common.f90
+$HOME/src/FrontISTR/fistr1/src/common/fstr_ctrl_common.f90
 ```
 
 このファイルにある `fstr_ctrl_get_SOLVER` は、`!SOLVER` 行を解析する関数である。
@@ -322,7 +322,7 @@ dumph = dmph - 1
 ファイルの場所は次のとおり。
 
 ```text
-/home/kamakiri/src/FrontISTR/fistr1/src/common/fstr_setup.f90
+$HOME/src/FrontISTR/fistr1/src/common/fstr_setup.f90
 ```
 
 `fstr_setup_SOLVER` は、読み取ったソルバー設定をFrontISTR内部の配列へ保存する。
@@ -352,7 +352,7 @@ svIarray(36) = 1
 ファイルの場所は次のとおり。
 
 ```text
-/home/kamakiri/src/FrontISTR/fistr1/src/lib/m_fstr.F90
+$HOME/src/FrontISTR/fistr1/src/lib/m_fstr.F90
 ```
 
 行列・ソルバー設定を初期化する `fstr_mat_init` に、次の1行を追加した。
@@ -371,7 +371,7 @@ hecMAT%Iarray(36) = 0  ! dump thermal load matrix H
 ファイルの場所は次のとおり。
 
 ```text
-/home/kamakiri/src/FrontISTR/fistr1/src/analysis/static/fstr_ass_load.f90
+$HOME/src/FrontISTR/fistr1/src/analysis/static/fstr_ass_load.f90
 ```
 
 このファイルは、集中荷重、分布荷重、温度荷重などを全体RHSへ組み立てる。
@@ -480,7 +480,7 @@ write(iunit, ...) &
 温度荷重の計算式がある次のファイルは変更していない。
 
 ```text
-/home/kamakiri/src/FrontISTR/fistr1/src/lib/static_LIB_3d.f90
+$HOME/src/FrontISTR/fistr1/src/lib/static_LIB_3d.f90
 ```
 
 この中の既存ルーチン `TLOAD_C3` を、そのままHの各列計算に使用した。
@@ -517,7 +517,7 @@ FrontISTR標準の温度荷重計算を呼び出し、入力温度だけを単�
 最初にFrontISTRソースの状態を確認する。
 
 ```bash
-cd /home/kamakiri/src/FrontISTR
+cd $HOME/src/FrontISTR
 git status --short
 git rev-parse --short HEAD
 ```
@@ -526,7 +526,7 @@ git rev-parse --short HEAD
 
 | コマンド | 意味 |
 |---|---|
-| `cd /home/kamakiri/src/FrontISTR` | 作業場所をFrontISTRのソース最上位フォルダへ移動する。パッチ内のファイルパスは、この場所を基準にしている |
+| `cd $HOME/src/FrontISTR` | 作業場所をFrontISTRのソース最上位フォルダへ移動する。パッチ内のファイルパスは、この場所を基準にしている |
 | `git status --short` | 変更済みファイルと未追跡ファイルを短い形式で表示する。パッチ適用前の状態を記録するために使う |
 | `git rev-parse --short HEAD` | 現在チェックアウトしているGitコミットを短いIDで表示する |
 
@@ -611,17 +611,17 @@ git diff
 
 標準版と混同しないよう、ビルド先とインストール先を分ける。
 
-- ビルド先: `/home/kamakiri/src/FrontISTR/build-dumph`
-- インストール先: `/home/kamakiri/local/frontistr-dumph`
+- ビルド先: `$HOME/src/FrontISTR/build-dumph`
+- インストール先: `$HOME/local/frontistr-dumph`
 
 ### 6.1 CMakeでビルド設定を作る
 
 ```bash
-cd /home/kamakiri/src/FrontISTR
+cd $HOME/src/FrontISTR
 
 cmake -S . -B build-dumph \
   -DCMAKE_BUILD_TYPE=RELEASE \
-  -DCMAKE_INSTALL_PREFIX=/home/kamakiri/local/frontistr-dumph \
+  -DCMAKE_INSTALL_PREFIX=$HOME/local/frontistr-dumph \
   -DWITH_MPI=OFF \
   -DWITH_OPENMP=ON \
   -DWITH_LAPACK=ON \
@@ -660,7 +660,7 @@ cmake -S . -B build-dumph \
 ```text
 -- Configuring done
 -- Generating done
--- Build files have been written to: /home/kamakiri/src/FrontISTR/build-dumph
+-- Build files have been written to: $HOME/src/FrontISTR/build-dumph
 ```
 
 ### 6.2 コンパイルする
@@ -695,22 +695,22 @@ cmake --install build-dumph
 `CMAKE_INSTALL_PREFIX` で指定した場所へコピーする。
 
 - 新たにソースをコンパイルすることが目的ではない
-- この手順では `/home/kamakiri/local/frontistr-dumph` へコピーする
+- この手順では `$HOME/local/frontistr-dumph` へコピーする
 - ユーザーのホームフォルダ内なので、通常は `sudo` を付けない
-- 通常版の `/home/kamakiri/local/frontistr` とは別の場所へ入る
+- 通常版の `$HOME/local/frontistr` とは別の場所へ入る
 
 改造版の実行ファイルは次の場所に入る。
 
 ```text
-/home/kamakiri/local/frontistr-dumph/bin/fistr1
+$HOME/local/frontistr-dumph/bin/fistr1
 ```
 
-通常版 `/home/kamakiri/local/frontistr/bin/fistr1` は上書きしない。
+通常版 `$HOME/local/frontistr/bin/fistr1` は上書きしない。
 
 インストールされた実行ファイルを確認する。
 
 ```bash
-ls -lh /home/kamakiri/local/frontistr-dumph/bin/fistr1
+ls -lh $HOME/local/frontistr-dumph/bin/fistr1
 ```
 
 - `ls`：ファイルを一覧表示する
@@ -756,7 +756,7 @@ Hだけが必要な場合でも、材料の `!ELASTIC` と `!EXPANSION_COEFF` �
 ```bash
 cd /mnt/d/work/002_CAE/frontistr/work/20260810_KinvH/model/005_H_direct
 set -o pipefail
-/home/kamakiri/local/frontistr-dumph/bin/fistr1 2>&1 | tee run_dumph.log
+$HOME/local/frontistr-dumph/bin/fistr1 2>&1 | tee run_dumph.log
 ```
 
 各コマンドと記号の意味は次のとおり。

@@ -17,6 +17,7 @@ FSTR.dbg.*
 0.log
 run.log
 run_dumph.log
+run_dump*.log
 meshHeaderData.bin
 *.cnt.bak
 
@@ -29,6 +30,13 @@ meshHeaderData.bin
 *.mm
 dump_matrix_*
 K_*.csv
+H_*.csv
+H.txt
+
+# --- リファインメッシュ（post/refine_tji_mesh.py --levels 2 で再生成できる、数MB単位で重い） ---
+20260810_KinvH/model/010_Tji_fine_H_direct/FistrModel.msh
+20260810_KinvH/model/010_Tji_fine_H_direct/Quad4_FEM_Tji_fine.inp
+20260810_KinvH/sample/002_thermalSensitive/Inp_Data/Quad4_FEM_Tji_fine.inp
 
 # --- Python ---
 __pycache__/

@@ -50,6 +50,19 @@ FrontISTR標準の `DUMPTYPE=CSR` による全体剛性行列Kの出力サンプ
 
 一様な温度変化を与えたFrontISTRの変位結果。`post/compute_kinvH.py` で計算した $\boldsymbol K^{-1}\boldsymbol H$ による変位と、`post/validate_kinvH.py` で比較する。
 
+## 6. 別実装（Quad4シェル、CATIA由来）とH・Wの設計を比較する
+
+```text
+002_thermalSensitive
+```
+
+FrontISTR以外で作られたH・W算出コード（Quad4要素）を置いてある。
+HとWがどちらも正しく行列として構成されているかを比較した結果を
+`002_thermalSensitive/COMPARISON.md` にまとめている。さらに、同じモデル
+（`Quad4_FEM_Tji.inp`）に対してH・K・Wを数値でも突き合わせた結果を
+[`../model/008_Tji_compare/README.md`](../model/008_Tji_compare/README.md) にまとめた
+（いずれも一致、計算時間の比較も掲載）。
+
 ## 解説の読む順番
 
 1. `../docs/09_ブログ_FrontISTRでKとHを取り出してKinvHを求める.md`

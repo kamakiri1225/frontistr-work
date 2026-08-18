@@ -47,8 +47,8 @@ relative diff = 0.0
 
 ## 重要な現在状態
 
-- `/home/kamakiri/src/FrontISTR` 本体は未変更。
-- 通常版 `/home/kamakiri/local/frontistr/bin/fistr1` も未変更。
+- `$HOME/src/FrontISTR` 本体は未変更。
+- 通常版 `$HOME/local/frontistr/bin/fistr1` も未変更。
 - 試作とコンパイルは `/tmp` のソースコピーで実施した。
 - 計算入力と出力は `model/005_H_direct` に保存済み。
 - 永続的に残る成果物は、プロジェクト内のパッチ、入力、ドキュメント。
@@ -58,14 +58,14 @@ relative diff = 0.0
 FrontISTR本体へパッチを適用し、通常版と別の場所へインストールする。
 
 ```bash
-cd /home/kamakiri/src/FrontISTR
+cd $HOME/src/FrontISTR
 git apply --check \
   /mnt/d/work/002_CAE/frontistr/work/20260810_KinvH/patch/frontistr_dumph_341.patch
 git apply \
   /mnt/d/work/002_CAE/frontistr/work/20260810_KinvH/patch/frontistr_dumph_341.patch
 ```
 
-その後、`docs/05_手順_FrontISTR_DUMPH追加とビルド.md` の第6章に従い、`build-dumph` でビルドして `/home/kamakiri/local/frontistr-dumph` へインストールする。
+その後、`docs/05_手順_FrontISTR_DUMPH追加とビルド.md` の第6章に従い、`build-dumph` でビルドして `$HOME/local/frontistr-dumph` へインストールする。
 
 ## Python列抽出実験について
 

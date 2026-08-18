@@ -55,15 +55,15 @@
 <!-- /wp:paragraph -->
 
 <!-- wp:code -->
-<pre class="wp-block-code"><code>/home/kamakiri/src/FrontISTR</code></pre>
+<pre class="wp-block-code"><code>$HOME/src/FrontISTR</code></pre>
 <!-- /wp:code -->
 
 <!-- wp:paragraph -->
-<p>このパスは、FrontISTRソースの <code>/home/kamakiri/src/FrontISTR</code> を起点とした相対パスです。フォルダ構成の中での位置は、次のようになっています。</p>
+<p>このパスは、FrontISTRソースの <code>$HOME/src/FrontISTR</code> を起点とした相対パスです。フォルダ構成の中での位置は、次のようになっています。</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:code -->
-<pre class="wp-block-code"><code>/home/kamakiri/src/FrontISTR/     ← FrontISTRソースの起点
+<pre class="wp-block-code"><code>$HOME/src/FrontISTR/     ← FrontISTRソースの起点
 ├── CMakeLists.txt                  ビルドルール
 ├── fistr1/                         FrontISTR本体（構造・熱解析など）
 │   └── src/
@@ -146,7 +146,7 @@
 <!-- /wp:paragraph -->
 
 <!-- wp:code -->
-<pre class="wp-block-code"><code>cd /home/kamakiri/src/FrontISTR
+<pre class="wp-block-code"><code>cd $HOME/src/FrontISTR
 
 cmake -S . -B build_test \
   -DCMAKE_BUILD_TYPE=RELEASE \
@@ -288,7 +288,7 @@ cmake --build build_test -j2</code></pre>
 
 <!-- wp:code -->
 <pre class="wp-block-code"><code>cd /mnt/d/work/002_CAE/frontistr/work/20260810_KinvH/model/007_compile_test
-/home/kamakiri/src/FrontISTR/build_test/fistr1/fistr1</code></pre>
+$HOME/src/FrontISTR/build_test/fistr1/fistr1</code></pre>
 <!-- /wp:code -->
 
 <!-- wp:paragraph -->
@@ -353,7 +353,7 @@ cmake --build build_test -j2</code></pre>
 <!-- /wp:paragraph -->
 
 <!-- wp:code -->
-<pre class="wp-block-code"><code>/home/kamakiri/src/FrontISTR/build_test/fistr1/fistr1</code></pre>
+<pre class="wp-block-code"><code>$HOME/src/FrontISTR/build_test/fistr1/fistr1</code></pre>
 <!-- /wp:code -->
 
 <!-- wp:paragraph -->
@@ -361,7 +361,7 @@ cmake --build build_test -j2</code></pre>
 <!-- /wp:paragraph -->
 
 <!-- wp:code -->
-<pre class="wp-block-code"><code>/home/kamakiri/local/frontistr/bin/fistr1</code></pre>
+<pre class="wp-block-code"><code>$HOME/local/frontistr/bin/fistr1</code></pre>
 <!-- /wp:code -->
 
 <!-- wp:paragraph -->
@@ -373,12 +373,12 @@ cmake --build build_test -j2</code></pre>
 <!-- /wp:heading -->
 
 <!-- wp:code -->
-<pre class="wp-block-code"><code>cd /home/kamakiri/src/FrontISTR
+<pre class="wp-block-code"><code>cd $HOME/src/FrontISTR
 cmake --install build_test</code></pre>
 <!-- /wp:code -->
 
 <!-- wp:paragraph -->
-<p>このコマンドは、<code>build_test</code> に作成されたインストール設定を読み、コンパイル済みの <code>build_test/fistr1/fistr1</code> を含む必要ファイルを <code>/home/kamakiri/local/frontistr</code> の下へ配置します。既に <code>/home/kamakiri/local/frontistr/bin/fistr1</code> がある場合は、その実行ファイルが書き換えた版に更新されます。</p>
+<p>このコマンドは、<code>build_test</code> に作成されたインストール設定を読み、コンパイル済みの <code>build_test/fistr1/fistr1</code> を含む必要ファイルを <code>$HOME/local/frontistr</code> の下へ配置します。既に <code>$HOME/local/frontistr/bin/fistr1</code> がある場合は、その実行ファイルが書き換えた版に更新されます。</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:paragraph -->
@@ -390,7 +390,7 @@ cmake --install build_test</code></pre>
 <!-- /wp:paragraph -->
 
 <!-- wp:code -->
-<pre class="wp-block-code"><code>alias fistr1c='/home/kamakiri/src/FrontISTR/build_test/fistr1/fistr1'</code></pre>
+<pre class="wp-block-code"><code>alias fistr1c='$HOME/src/FrontISTR/build_test/fistr1/fistr1'</code></pre>
 <!-- /wp:code -->
 
 <!-- wp:paragraph -->
@@ -840,7 +840,7 @@ nprocs = 1</code></pre>
 <!-- /wp:heading -->
 
 <!-- wp:code -->
-<pre class="wp-block-code"><code>cd /home/kamakiri/src/FrontISTR
+<pre class="wp-block-code"><code>cd $HOME/src/FrontISTR
 
 cmake -S . -B build_test \
   -DCMAKE_BUILD_TYPE=RELEASE \
@@ -859,7 +859,7 @@ cmake -S . -B build_test \
 <!-- /wp:table -->
 
 <!-- wp:paragraph -->
-<p><code>$HOME</code> はホームフォルダを表す環境変数です。今回の環境では、<code>$HOME/local/frontistr</code> は <code>/home/kamakiri/local/frontistr</code> と同じ意味です。</p>
+<p><code>$HOME</code> はホームフォルダを表す環境変数です。今回の環境では、<code>$HOME/local/frontistr</code> は <code>$HOME/local/frontistr</code> と同じ意味です。</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:heading {"level":3,"className":"wp-block-heading"} -->
@@ -879,7 +879,7 @@ cmake -S . -B build_test \
 <!-- /wp:paragraph -->
 
 <!-- wp:code -->
-<pre class="wp-block-code"><code>/home/kamakiri/src/FrontISTR/
+<pre class="wp-block-code"><code>$HOME/src/FrontISTR/
 ├── CMakeLists.txt               FrontISTRのビルドルール
 ├── fistr1/                      FrontISTRのソースコード
 ├── hecmw1/                      HEC-MWのソースコード
@@ -929,11 +929,11 @@ cmake -S . -B build_test \
 <!-- /wp:code -->
 
 <!-- wp:paragraph -->
-<p>今回の指定では、完成品は <code>/home/kamakiri/local/frontistr</code> の下へ配置されます。したがって2つの場所の役割は次のように異なります。</p>
+<p>今回の指定では、完成品は <code>$HOME/local/frontistr</code> の下へ配置されます。したがって2つの場所の役割は次のように異なります。</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:table -->
-<figure class="wp-block-table"><table class="has-fixed-layout"><thead><tr><th>場所</th><th>役割</th></tr></thead><tbody><tr><td><code>/home/kamakiri/src/FrontISTR/build_test</code></td><td>CMakeの設定、コンパイル途中のファイル、コンパイル結果を置く作業場所</td></tr><tr><td><code>/home/kamakiri/local/frontistr</code></td><td>完成したFrontISTRを日常の解析で使うためのインストール先</td></tr></tbody></table></figure>
+<figure class="wp-block-table"><table class="has-fixed-layout"><thead><tr><th>場所</th><th>役割</th></tr></thead><tbody><tr><td><code>$HOME/src/FrontISTR/build_test</code></td><td>CMakeの設定、コンパイル途中のファイル、コンパイル結果を置く作業場所</td></tr><tr><td><code>$HOME/local/frontistr</code></td><td>完成したFrontISTRを日常の解析で使うためのインストール先</td></tr></tbody></table></figure>
 <!-- /wp:table -->
 
 <!-- wp:heading {"level":3,"className":"wp-block-heading"} -->
@@ -945,7 +945,7 @@ cmake -S . -B build_test \
 <!-- /wp:paragraph -->
 
 <!-- wp:code -->
-<pre class="wp-block-code"><code>cd /home/kamakiri/src/FrontISTR
+<pre class="wp-block-code"><code>cd $HOME/src/FrontISTR
 cmake --build build_test --target fistr1 -j2</code></pre>
 <!-- /wp:code -->
 
@@ -972,7 +972,7 @@ cmake --build build_test --target fistr1 -j2</code></pre>
 <!-- /wp:paragraph -->
 
 <!-- wp:code -->
-<pre class="wp-block-code"><code>cd /home/kamakiri/src/FrontISTR/build_test
+<pre class="wp-block-code"><code>cd $HOME/src/FrontISTR/build_test
 make fistr1</code></pre>
 <!-- /wp:code -->
 
@@ -1094,7 +1094,7 @@ make fistr1</code></pre>
 <!-- /wp:paragraph -->
 
 <!-- wp:code -->
-<pre class="wp-block-code"><code>cd /home/kamakiri/src/FrontISTR
+<pre class="wp-block-code"><code>cd $HOME/src/FrontISTR
 cmake --build build_test --target fistr1 -j2</code></pre>
 <!-- /wp:code -->
 
@@ -1135,7 +1135,7 @@ cmake --build build_test --target fistr1 -j2</code></pre>
 <!-- /wp:paragraph -->
 
 <!-- wp:code -->
-<pre class="wp-block-code"><code>cd /home/kamakiri/src/FrontISTR
+<pre class="wp-block-code"><code>cd $HOME/src/FrontISTR
 git diff -- fistr1/src/main/fistr_main.f90</code></pre>
 <!-- /wp:code -->
 
@@ -1144,7 +1144,7 @@ git diff -- fistr1/src/main/fistr_main.f90</code></pre>
 <!-- /wp:paragraph -->
 
 <!-- wp:code -->
-<pre class="wp-block-code"><code>cd /home/kamakiri/src/FrontISTR
+<pre class="wp-block-code"><code>cd $HOME/src/FrontISTR
 cmake --build build_test --target fistr1 -j2</code></pre>
 <!-- /wp:code -->
 
@@ -1153,7 +1153,7 @@ cmake --build build_test --target fistr1 -j2</code></pre>
 <!-- /wp:paragraph -->
 
 <!-- wp:code -->
-<pre class="wp-block-code"><code>cd /home/kamakiri/src/FrontISTR
+<pre class="wp-block-code"><code>cd $HOME/src/FrontISTR
 git checkout fistr1/src/main/fistr_main.f90
 cmake --build build_test --target fistr1 -j2</code></pre>
 <!-- /wp:code -->
