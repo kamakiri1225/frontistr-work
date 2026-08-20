@@ -1,0 +1,22 @@
+** CalculiX deck: linear-elastic thermal-sensitivity model (C3D4, 570 nodes)
+** mesh + material + sections come from mesh.inp (Quad4_FEM_Tji, *PLASTIC removed)
+*INCLUDE, INPUT=mesh.inp
+*NSET, NSET=NALL, GENERATE
+1, 570, 1
+*NSET, NSET=NFIX
+13, 14, 15, 16, 101, 102, 103, 104, 105, 120, 121, 122, 123, 124, 125, 126
+327, 328, 329, 330, 331
+*INITIAL CONDITIONS, TYPE=TEMPERATURE
+NALL, 0.
+*STEP
+*STATIC
+*BOUNDARY
+NFIX, 1, 3, 0.
+*TEMPERATURE
+NALL, 0.
+19, 1.0
+*NODE FILE
+U, NT
+*EL FILE
+S
+*END STEP

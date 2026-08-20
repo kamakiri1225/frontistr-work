@@ -1,0 +1,148 @@
+--- a/linstatic.c	2023-07-29 17:49:53.416409604 +0900
++++ b/linstatic.c	2026-08-20 22:17:10.652029553 +0900
+@@ -460,6 +460,145 @@
+ 	       iponoel,inoel,&network,ntrans,inotr,trab,smscale,&mscalmethod,
+ 	       set,nset,islavelinv,autloc,irowtloc,jqtloc,&mortartrafoflag);
+ 
++  /* ===== CCX_DUMPKH: export stiffness K and thermal-load matrix H (active DOFs),
++     then stop. Enabled by setting the environment variable CCX_DUMPKH. K is the
++     assembled linear stiffness (ad/au/icol/irow). H[:,j] is the thermal load
++     that mafillsm returns in fext when the nodal temperature field is e_j
++     (unit temperature at node j). nactdof maps (node,dir)->equation. ===== */
++  if(getenv("CCX_DUMPKH")!=NULL){
++    ITG id_i,id_j,id_l,id_k,neqd=*neq;
++    ITG stiff0=0,buckl0=0,rhsi1=1,intsch0=0,nml0=0,mass0[2]={0,0};
++    double *t1u=NULL;
++    long long nnzK=0,nnzH=0;
++    FILE *fK,*fH,*fN,*fT;
++
++    printf(" CCX_DUMPKH: exporting K.mtx, H.mtx, nactdof.txt (active DOFs=%ld)\n\n",
++           (long)neqd);
++
++    /* --- K.mtx : MatrixMarket, symmetric (lower triangle) --- */
++    for(id_i=0;id_i<neqd;id_i++) nnzK+=1+icol[id_i];
++    fK=fopen("K.mtx","w");
++    fprintf(fK,"%%%%MatrixMarket matrix coordinate real symmetric\n");
++    fprintf(fK,"%% CalculiX linear stiffness matrix (active DOFs)\n");
++    fprintf(fK,"%ld %ld %lld\n",(long)neqd,(long)neqd,nnzK);
++    for(id_i=0;id_i<neqd;id_i++)
++      fprintf(fK,"%ld %ld %.12e\n",(long)(id_i+1),(long)(id_i+1),ad[id_i]);
++    id_l=0;
++    for(id_i=0;id_i<neqd;id_i++)
++      for(id_j=0;id_j<icol[id_i];id_j++){
++        fprintf(fK,"%ld %ld %.12e\n",(long)irow[id_l],(long)(id_i+1),au[id_l]);
++        id_l++;
++      }
++    fclose(fK);
++
++    /* --- nactdof.txt : node dir eq  (dir 1=x,2=y,3=z ; eq 0 = fixed) --- */
++    fN=fopen("nactdof.txt","w");
++    fprintf(fN,"# node dir eq   (mt=%ld)\n",(long)mt);
++    for(id_i=0;id_i<*nk;id_i++)
++      for(id_k=0;id_k<mt;id_k++)
++        fprintf(fN,"%ld %ld %ld\n",(long)(id_i+1),(long)id_k,(long)nactdof[mt*id_i+id_k]);
++    fclose(fN);
++
++    (void)t1u; (void)fH; (void)fT;
++    (void)stiff0; (void)buckl0; (void)rhsi1; (void)intsch0; (void)nml0; (void)mass0;
++
++    /* --- H.mtx : thermal-load matrix for first-order tetrahedra (C3D4),
++       assembled directly here (no solver re-entry). For a C3D4 the strain matrix
++       B is constant and the temperature is linear, so the element thermal-load
++       column is  H_e[:,k] = (V/4) * B^T (D * alpha * m),  m=[1,1,1,0,0,0]^T,
++       the same for every local node k (because int N_k dV = V/4). Each column is
++       scattered to the active DOFs via nactdof. (single isotropic material) --- */
++    {
++      double Emod,nu,alpha,lam,mu,Dm[6],Bt_Dm[12],hcol[12];
++      double J[3][3],Ji[3][3],detJ,vol,g[4][3];
++      double *Hd=NULL;
++      ITG e,p,q,a,b2,nod[4],kg,jg,dir,eqn,mat0=0;
++
++      /* material constants of the first material (isotropic) */
++      /* elcon(0:ncmat_,...): index0=temperature, 1=E(Young), 2=nu(Poisson).
++         alcon(0:6,...): index0=temperature, 1=alpha (isotropic expansion). */
++      Emod =elcon[1+((*ncmat_)+1)*0+((*ncmat_)+1)*(*ntmat_)*mat0];
++      nu   =elcon[2+((*ncmat_)+1)*0+((*ncmat_)+1)*(*ntmat_)*mat0];
++      alpha=alcon[1+7*0+7*(*ntmat_)*mat0];
++      lam=Emod*nu/((1.0+nu)*(1.0-2.0*nu));
++      mu =Emod/(2.0*(1.0+nu));
++      /* D*alpha*m : isotropic thermal stress = alpha*(3*lam+2*mu) on normal comps */
++      for(p=0;p<6;p++) Dm[p]=0.0;
++      Dm[0]=Dm[1]=Dm[2]=alpha*(3.0*lam+2.0*mu);
++
++      Hd=(double *)calloc((size_t)neqd*(*nk),sizeof(double));
++
++      for(e=0;e<*ne;e++){
++        if(strcmp1(&lakon[8*e],"C3D4")!=0) continue;
++        for(p=0;p<4;p++) nod[p]=kon[ipkon[e]+p];
++        /* J = [P2-P1,P3-P1,P4-P1] (columns) */
++        for(p=0;p<3;p++){
++          J[p][0]=co[3*(nod[1]-1)+p]-co[3*(nod[0]-1)+p];
++          J[p][1]=co[3*(nod[2]-1)+p]-co[3*(nod[0]-1)+p];
++          J[p][2]=co[3*(nod[3]-1)+p]-co[3*(nod[0]-1)+p];
++        }
++        detJ=J[0][0]*(J[1][1]*J[2][2]-J[1][2]*J[2][1])
++            -J[0][1]*(J[1][0]*J[2][2]-J[1][2]*J[2][0])
++            +J[0][2]*(J[1][0]*J[2][1]-J[1][1]*J[2][0]);
++        vol=detJ/6.0; if(vol<0.0) vol=-vol;
++        /* inverse of J */
++        Ji[0][0]=(J[1][1]*J[2][2]-J[1][2]*J[2][1])/detJ;
++        Ji[0][1]=(J[0][2]*J[2][1]-J[0][1]*J[2][2])/detJ;
++        Ji[0][2]=(J[0][1]*J[1][2]-J[0][2]*J[1][1])/detJ;
++        Ji[1][0]=(J[1][2]*J[2][0]-J[1][0]*J[2][2])/detJ;
++        Ji[1][1]=(J[0][0]*J[2][2]-J[0][2]*J[2][0])/detJ;
++        Ji[1][2]=(J[0][2]*J[1][0]-J[0][0]*J[1][2])/detJ;
++        Ji[2][0]=(J[1][0]*J[2][1]-J[1][1]*J[2][0])/detJ;
++        Ji[2][1]=(J[0][1]*J[2][0]-J[0][0]*J[2][1])/detJ;
++        Ji[2][2]=(J[0][0]*J[1][1]-J[0][1]*J[1][0])/detJ;
++        /* shape-function gradients: gradN2=Ji row0, N3=row1, N4=row2, N1=-sum */
++        for(p=0;p<3;p++){
++          g[1][p]=Ji[0][p]; g[2][p]=Ji[1][p]; g[3][p]=Ji[2][p];
++          g[0][p]=-(g[1][p]+g[2][p]+g[3][p]);
++        }
++        /* Bt_Dm[12] = B^T * Dm  (B constant). node j dofs (x,y,z) */
++        for(p=0;p<4;p++){
++          Bt_Dm[3*p+0]=g[p][0]*Dm[0]+g[p][1]*Dm[3]+g[p][2]*Dm[5];
++          Bt_Dm[3*p+1]=g[p][1]*Dm[1]+g[p][0]*Dm[3]+g[p][2]*Dm[4];
++          Bt_Dm[3*p+2]=g[p][2]*Dm[2]+g[p][1]*Dm[4]+g[p][0]*Dm[5];
++        }
++        for(p=0;p<12;p++) hcol[p]=(vol/4.0)*Bt_Dm[p];
++        /* scatter: every column node k gets the same hcol distributed to the
++           element node rows (active DOFs) */
++        for(a=0;a<4;a++){
++          kg=nod[a];
++          for(b2=0;b2<4;b2++){
++            jg=nod[b2];
++            for(dir=1;dir<=3;dir++){
++              eqn=nactdof[mt*(jg-1)+dir];
++              if(eqn>0) Hd[(size_t)(eqn-1)*(*nk)+(kg-1)]+=hcol[3*b2+(dir-1)];
++            }
++          }
++        }
++      }
++
++      /* write H.mtx (neq x nk, nonzeros) */
++      fH=fopen("H.mtx","w");
++      for(p=0;p<neqd;p++)
++        for(q=0;q<*nk;q++)
++          if(Hd[(size_t)p*(*nk)+q]!=0.0) nnzH++;
++      fprintf(fH,"%%%%MatrixMarket matrix coordinate real general\n");
++      fprintf(fH,"%% CalculiX C3D4 thermal load matrix H (active DOF rows x node columns)\n");
++      fprintf(fH,"%ld %ld %lld\n",(long)neqd,(long)(*nk),nnzH);
++      for(p=0;p<neqd;p++)
++        for(q=0;q<*nk;q++)
++          if(Hd[(size_t)p*(*nk)+q]!=0.0)
++            fprintf(fH,"%ld %ld %.12e\n",(long)(p+1),(long)(q+1),Hd[(size_t)p*(*nk)+q]);
++      fclose(fH);
++      free(Hd);
++      printf(" CCX_DUMPKH: E=%g nu=%g alpha=%g\n",Emod,nu,alpha);
++    }
++
++    printf(" CCX_DUMPKH: wrote K.mtx (nnz=%lld), H.mtx (nnz=%lld), nactdof.txt\n\n",
++           nnzK,nnzH);
++    FORTRAN(stop,());
++  }
++
+   /* check for negative Jacobians */
+ 
+   if(nmethodl==0) *nmethod=0;

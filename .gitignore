@@ -47,3 +47,14 @@ __pycache__/
 # --- OS ---
 .DS_Store
 Thumbs.db
+
+# --- CalculiX (ccx) generated outputs (regenerate by re-running ccx / ccx_wdiff.py) ---
+*.frd
+*.cvg
+*.12d
+nactdof.txt
+Wdiff_ccx.txt
+run_ccx.log
+ccx_*.dat
+ccx_*.sta
+spooles.out
