@@ -120,7 +120,7 @@ def main():
 
     # optional: compare with FrontISTR DUMPW result (same model) if present
     ref = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                       '../../model/011_Tji_DUMPW/Wdiff_fistr.txt')
+                       '../../frontistr/model/011_Tji_DUMPW/Wdiff_fistr.txt')
     if os.path.exists(ref):
         rf = {}
         for line in open(ref):

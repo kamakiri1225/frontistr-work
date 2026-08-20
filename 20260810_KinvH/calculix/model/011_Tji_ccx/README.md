@@ -36,4 +36,4 @@ CCX_DUMPKH=1 $HOME/src/calculix_build/CalculiX/ccx_2.21/src/ccx_2.21 ccx_tji
 
 ## 結果
 
-FrontISTR DUMPW（`../../../model/011_Tji_DUMPW/Wdiff_fistr.txt`）と相関 0.9995・相対差約 3% で一致。
+FrontISTR DUMPW（`../../../frontistr/model/011_Tji_DUMPW/Wdiff_fistr.txt`）と相関 0.9995・相対差約 3% で一致。

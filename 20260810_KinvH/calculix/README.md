@@ -31,7 +31,7 @@ CCX_DUMPKH=1 $HOME/src/calculix_build/CalculiX/ccx_2.21/src/ccx_2.21 ccx_tji
 
 ## 結果
 
-FrontISTR DUMPW（`../model/011_Tji_DUMPW`）と比較して、感度 `Wdiff` は**相関 0.9995・
+FrontISTR DUMPW（`../frontistr/model/011_Tji_DUMPW`）と比較して、感度 `Wdiff` は**相関 0.9995・
 相対差 約 3%**で一致（支配成分は完全一致）。**CalculiX でも同じ K・H・W・VTK 出力が
 （ソルバ内部で）できる**ことを確認した。残る数 % は独立した 2 つの FEM コードの一次四面体の
 実装差。4 並列（OMP=4）の実測は FrontISTR 約 0.16–0.19 s / CalculiX 約 0.13–0.15 s（同規模）。

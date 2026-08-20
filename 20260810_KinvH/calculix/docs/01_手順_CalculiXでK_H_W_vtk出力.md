@@ -14,10 +14,10 @@ FrontISTR で作った熱感度解析（剛性 `K`、温度荷重 `H`、感度 `
 Quad4_FEM_Tji（570 節点）で、元の `Quad4_FEM_Tji.inp` が既に CalculiX/Abaqus 形式
 （`*NODE` / `*ELEMENT,TYPE=C3D4` / `*ELASTIC` / `*EXPANSION`）なのでそのまま使える。
 
-> **フォルダについて**：このプロジェクト（`20260810_KinvH`）は基本 FrontISTR 用なので、
-> CalculiX の作業は `20260810_KinvH/calculix/` 以下にまとめて分離した（`model/` `patch/`
-> `post/` `docs/`）。FrontISTR 側（`model/011_Tji_DUMPW` 等、`patch/frontistr_dumpw_tet.patch`）
-> とは混ざらないようにしてある。
+> **フォルダについて**：`20260810_KinvH/` の下を **`frontistr/`** と **`calculix/`** に分けてある
+> （どちらも `model/` `patch/` `post/` `docs/` を持つ）。この文書は `calculix/docs/01`。
+> FrontISTR 側（`frontistr/model/011_Tji_DUMPW`、`frontistr/patch/frontistr_dumpw_tet.patch`、
+> `frontistr/docs/13`・`14`）と混ざらないようにしてある。
 
 ---
 
@@ -333,7 +333,7 @@ python3 ../../post/ccx_wdiff.py --workdir . --inp Quad4_FEM_Tji.inp
 
 ## 5. 結果：FrontISTR と一致するか
 
-同じモデルの FrontISTR DUMPW 結果（`model/011_Tji_DUMPW/Wdiff_fistr.txt`）と比較：
+同じモデルの FrontISTR DUMPW 結果（`frontistr/model/011_Tji_DUMPW/Wdiff_fistr.txt`）と比較：
 
 | 指標 | 値 |
 |---|---|
@@ -349,7 +349,7 @@ python3 ../../post/ccx_wdiff.py --workdir . --inp Quad4_FEM_Tji.inp
 ParaView で見た感度 |W| の比較（左：FrontISTR DUMPH〔1 次〕、中：FrontISTR DUMPW〔1 次〕、
 右：**CalculiX**〔1 次〕。3 つとも同じ色スケール 4.7e-4）。分布はそっくり。
 
-![Python/FrontISTR/CalculiX の感度分布比較](../../docs/img/fi1python_fi1_cxx1.png)
+![Python/FrontISTR/CalculiX の感度分布比較](../../frontistr/docs/img/fi1python_fi1_cxx1.png)
 
 ### 5.1 計算時間（4 並列 OMP=4、K・H・W・VTK すべてソルバ内）
 
@@ -371,4 +371,4 @@ ParaView で見た感度 |W| の比較（左：FrontISTR DUMPH〔1 次〕、中�
 | 実行用の入力一式 | `calculix/model/011_Tji_ccx/`（`ccx_tji.inp` / `mesh.inp` / `Quad4_FEM_Tji.inp`） |
 | K・H・nactdof の出力 | `calculix/model/011_Tji_ccx/K.mtx` / `H.mtx` / `nactdof.txt` |
 | W・VTK の後処理 | `calculix/post/ccx_wdiff.py` → `Wdiff_ccx.txt` / `sensitivity_Wdiff_ccx.vtk` |
-| FrontISTR 版（比較元） | `model/011_Tji_DUMPW/`、`docs/13`・`docs/14`、`patch/frontistr_dumpw_tet.patch` |
+| FrontISTR 版（比較元） | `frontistr/model/011_Tji_DUMPW/`、`frontistr/docs/13`・`frontistr/docs/14`、`frontistr/patch/frontistr_dumpw_tet.patch` |

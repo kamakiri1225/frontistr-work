@@ -1,6 +1,0 @@
-!MESH, NAME=fstrMSH, TYPE=HECMW-ENTIRE
-FistrModel.msh
-!MESH, NAME=mesh, TYPE=HECMW-ENTIRE
-FistrModel.msh
-!CONTROL,NAME=fstrCNT
-FistrModel.cnt

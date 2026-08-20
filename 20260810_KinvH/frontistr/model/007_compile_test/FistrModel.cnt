@@ -1,0 +1,39 @@
+# ==========================================================
+#  コンパイルテスト用ダミーモデル（四面体1個）解析条件
+#  単位系: mm-ton-s
+#    長さ    : mm
+#    力      : N
+#    応力・E : MPa (= N/mm^2)
+#    密度    : ton/mm^3
+#    時間    : s
+#    温度    : degC（線膨張係数は 1/degC）
+#  ※ ここで書いた !MATERIAL が .msh の材料値より優先されます。
+# ==========================================================
+!VERSION
+ 3
+!WRITE,RESULT
+!WRITE, VISUAL, FREQUENCY=1
+!SOLUTION,TYPE=STATIC
+!BOUNDARY
+ fix, 1, 1, 0.0
+ fix, 2, 2, 0.0
+ fix, 3, 3, 0.0
+!CLOAD
+ force, 1, 100.0
+ force, 2, 0.0
+ force, 3, 0.0
+!SOLVER,METHOD=DIRECT,ITERLOG=NO,TIMELOG=YES
+ 10000, 1
+ 1.0e-8, 1.0, 0.0
+!MATERIAL, NAME=FC300
+!ELASTIC, TYPE=ISOTROPIC
+ 130000.0, 0.27
+!DENSITY
+ 7.4e-9
+!EXPANSION_COEFF
+ 1.2e-5
+!VISUAL, method=PSR
+!surface_num=1
+!surface 1
+!output_type=VTK
+!END

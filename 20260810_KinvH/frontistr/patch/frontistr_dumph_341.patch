@@ -1,0 +1,194 @@
+diff --git a/fistr1/src/analysis/static/fstr_ass_load.f90 b/fistr1/src/analysis/static/fstr_ass_load.f90
+index 6a3c9754..8548f28e 100644
+--- a/fistr1/src/analysis/static/fstr_ass_load.f90
++++ b/fistr1/src/analysis/static/fstr_ass_load.f90
+@@ -17,6 +17,8 @@ module m_fstr_ass_load
+   use m_utilities
+   
+   implicit none
++
++  logical, save :: thermal_matrix_exported = .false.
+   
+ contains
+   !
+@@ -58,6 +60,11 @@ contains
+     
+     ! Process thermal loads (TLOAD)
+     call process_thermal_loads(cstep, ctime, hecMESH, hecMAT, fstrSOLID)
++
++    if (svIarray(36) /= 0 .and. .not. thermal_matrix_exported) then
++      call export_thermal_matrix_341(hecMESH, fstrSOLID)
++      thermal_matrix_exported = .true.
++    endif
+     
+     ! Process spring forces
+     call fstr_Update_NDForce_spring(cstep, hecMESH, fstrSOLID, hecMAT%B)
+@@ -550,4 +557,81 @@ contains
+     
+   end subroutine calculate_thermal_load
+ 
++  !======================================================================!
++  !> Export f_thermal = H T for first-order tetrahedral elements (type 341).
++  !> Duplicate coordinate entries from adjacent elements are intentionally
++  !> written; Matrix Market readers sum them when constructing the matrix.
++  !======================================================================!
++  subroutine export_thermal_matrix_341(hecMESH, fstrSOLID)
++    type(hecmwST_local_mesh), intent(in) :: hecMESH
++    type(fstr_solid), intent(inout)      :: fstrSOLID
++
++    integer(kind=kint), parameter :: etype = 341, nn = 4, ndof = 3
++    integer(kind=kint), parameter :: iunit = 208
++    integer(kind=kint) :: icel, is, i, j, k, inode, isect, cdsys_ID
++    integer(kind=kint) :: n_elem_341, nentry, stat
++    integer(kind=kint) :: nodLocal(nn)
++    real(kind=kreal) :: xx(nn), yy(nn), zz(nn), tt(nn), tt0(nn)
++    real(kind=kreal) :: vect(nn*ndof), coords(3,3)
++
++    if (hecmw_comm_get_size() /= 1) then
++      if (hecmw_comm_get_rank() == 0) then
++        write(IMSG,*) 'DUMPH currently supports only a single domain.'
++      endif
++      call hecmw_abort(hecmw_comm_get_comm())
++    endif
++
++    n_elem_341 = 0
++    do icel = 1, hecMESH%n_elem
++      if (hecMESH%elem_type(icel) /= etype) cycle
++      if (fstrSOLID%elements(icel)%elemact_flag == kELACT_INACTIVE) cycle
++      n_elem_341 = n_elem_341 + 1
++    enddo
++    nentry = n_elem_341 * nn * ndof * nn
++
++    open(iunit, file='H_matrix.mtx', status='replace', iostat=stat)
++    if (stat /= 0) then
++      write(IMSG,*) 'DUMPH: cannot open H_matrix.mtx'
++      call hecmw_abort(hecmw_comm_get_comm())
++    endif
++    write(iunit,'(A)') '%%MatrixMarket matrix coordinate real general'
++    write(iunit,"(A)") '% Thermal load matrix: f_thermal = H * T'
++    write(iunit,"(I0,' ',I0,' ',I0)") hecMESH%n_node*ndof, hecMESH%n_node, nentry
++
++    tt0(:) = 0.0d0
++    do icel = 1, hecMESH%n_elem
++      if (hecMESH%elem_type(icel) /= etype) cycle
++      if (fstrSOLID%elements(icel)%elemact_flag == kELACT_INACTIVE) cycle
++
++      is = hecMESH%elem_node_index(icel-1)
++      do j = 1, nn
++        nodLocal(j) = hecMESH%elem_node_item(is+j)
++        inode = nodLocal(j)
++        xx(j) = hecMESH%node(3*inode-2)
++        yy(j) = hecMESH%node(3*inode-1)
++        zz(j) = hecMESH%node(3*inode)
++      enddo
++
++      isect = hecMESH%section_ID(icel)
++      cdsys_ID = hecMESH%section%sect_orien_ID(isect)
++      call get_coordsys(cdsys_ID, hecMESH, fstrSOLID, coords)
++
++      do k = 1, nn
++        tt(:) = 0.0d0
++        tt(k) = 1.0d0
++        call TLOAD_C3(etype, nn, xx, yy, zz, tt, tt0, &
++          fstrSOLID%elements(icel)%gausses, vect, cdsys_ID, coords)
++        do j = 1, nn
++          do i = 1, ndof
++            write(iunit,"(I0,' ',I0,' ',e20.12e3)") &
++              ndof*(nodLocal(j)-1)+i, nodLocal(k), vect(ndof*(j-1)+i)
++          enddo
++        enddo
++      enddo
++    enddo
++    close(iunit)
++    write(IMSG,*) 'DUMPH: wrote H_matrix.mtx, shape=', &
++      hecMESH%n_node*ndof, hecMESH%n_node
++  end subroutine export_thermal_matrix_341
++
+ end module m_fstr_ass_load
+diff --git a/fistr1/src/common/fstr_ctrl_common.f90 b/fistr1/src/common/fstr_ctrl_common.f90
+index b8f6e2db..2e76ec8c 100644
+--- a/fistr1/src/common/fstr_ctrl_common.f90
++++ b/fistr1/src/common/fstr_ctrl_common.f90
+@@ -82,7 +82,7 @@ contains
+   !> Read in !SOLVER
+   function fstr_ctrl_get_SOLVER( ctrl, method, precond, nset, iterlog, timelog, steplog, nier, &
+       iterpremax, nrest, nBFGS, scaling, &
+-      dumptype, dumpexit, usejad, ncolor_in, mpc_method, estcond, method2, recyclepre, &
++      dumptype, dumpexit, dumph, usejad, ncolor_in, mpc_method, estcond, method2, recyclepre, &
+       solver_opt, contact_elim, &
+       resid, singma_diag, sigma, thresh, filter )
+     integer(kind=kint) :: ctrl
+@@ -99,6 +99,7 @@ contains
+     integer(kind=kint) :: scaling
+     integer(kind=kint) :: dumptype
+     integer(kind=kint) :: dumpexit
++    integer(kind=kint) :: dumph
+     integer(kind=kint) :: usejad
+     integer(kind=kint) :: ncolor_in
+     integer(kind=kint) :: mpc_method
+@@ -120,7 +121,7 @@ contains
+ 
+     integer(kind=kint) :: number_number = 5
+     integer(kind=kint) :: indirect_number = 6 ! GMRESR and GMRESREN need to be added
+-    integer(kind=kint) :: iter, time, sclg, dmpt, dmpx, usjd, step
++    integer(kind=kint) :: iter, time, sclg, dmpt, dmpx, dmph, usjd, step
+ 
+     fstr_ctrl_get_SOLVER = -1
+ 
+@@ -130,6 +131,7 @@ contains
+     sclg = scaling+1
+     dmpt = dumptype+1
+     dmpx = dumpexit+1
++    dmph = dumph+1
+     usjd = usejad+1
+     !* parameter in header line -----------------------------------------------------------------*!
+ 
+@@ -143,6 +145,7 @@ contains
+     if( fstr_ctrl_get_param_ex( ctrl, 'SCALING ', 'NO,YES ',           0,   'P',   sclg ) /= 0) return
+     if( fstr_ctrl_get_param_ex( ctrl, 'DUMPTYPE ', dlist,              0,   'P',   dmpt ) /= 0) return
+     if( fstr_ctrl_get_param_ex( ctrl, 'DUMPEXIT ','NO,YES ',           0,   'P',   dmpx ) /= 0) return
++    if( fstr_ctrl_get_param_ex( ctrl, 'DUMPH ',   'NO,YES ',           0,   'P',   dmph ) /= 0) return
+     if( fstr_ctrl_get_param_ex( ctrl, 'USEJAD '  ,'NO,YES ',           0,   'P',   usjd ) /= 0) return
+     if( fstr_ctrl_get_param_ex( ctrl, 'MPCMETHOD ','# ',               0, 'I',mpc_method) /= 0) return
+     if( fstr_ctrl_get_param_ex( ctrl, 'ESTCOND '  ,'# ',               0,   'I',estcond ) /= 0) return
+@@ -191,6 +194,7 @@ contains
+     steplog = step -1
+     scaling = sclg -1
+     dumpexit = dmpx -1
++    dumph = dmph -1
+     usejad = usjd -1
+ 
+     fstr_ctrl_get_SOLVER = 0
+diff --git a/fistr1/src/common/fstr_setup.f90 b/fistr1/src/common/fstr_setup.f90
+index f25fac63..a9b857c0 100644
+--- a/fistr1/src/common/fstr_setup.f90
++++ b/fistr1/src/common/fstr_setup.f90
+@@ -1975,6 +1975,7 @@ contains
+     !   steplog    => svIarray(23)
+     !   dumptype   => svIarray(31)
+     !   dumpexit   => svIarray(32)
++    !   dumph      => svIarray(36)
+     !   usejad     => svIarray(33)
+     !   ncolor_in  => svIarray(34)
+     !   mpc_method => svIarray(13)
+@@ -1994,7 +1995,7 @@ contains
+     rcode = fstr_ctrl_get_SOLVER( ctrl,                      &
+       svIarray(2), svIarray(3), svIarray(4), svIarray(21), svIarray(22), svIarray(23),&
+       svIarray(1), svIarray(5), svIarray(6), svIarray(60), svIarray(7), &
+-      svIarray(31), svIarray(32), svIarray(33), svIarray(34), svIarray(13), svIarray(14), svIarray(8),&
++      svIarray(31), svIarray(32), svIarray(36), svIarray(33), svIarray(34), svIarray(13), svIarray(14), svIarray(8),&
+       svIarray(35), svIarray(41:50), svIarray(15), &
+       svRarray(1), svRarray(2), svRarray(3),                &
+       svRarray(4), svRarray(5) )
+diff --git a/fistr1/src/lib/m_fstr.F90 b/fistr1/src/lib/m_fstr.F90
+index dd206116..e76a05ba 100644
+--- a/fistr1/src/lib/m_fstr.F90
++++ b/fistr1/src/lib/m_fstr.F90
+@@ -857,6 +857,7 @@ contains
+     hecMAT%Iarray(13)=    0    ! = mpc_method
+     hecMAT%Iarray(14)=    0    ! = estcond
+     hecMAT%Iarray(35)=    3    ! = maxrecycle_precond
++    hecMAT%Iarray(36)=    0    ! = dump thermal load matrix H
+     hecMAT%Iarray(41)=    0    ! = solver_opt1
+     hecMAT%Iarray(42)=    0    ! = solver_opt2
+     hecMAT%Iarray(43)=    0    ! = solver_opt3

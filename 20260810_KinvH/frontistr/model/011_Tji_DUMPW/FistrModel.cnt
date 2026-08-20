@@ -1,0 +1,39 @@
+############################################################
+# DUMPW verification for Quad4_FEM_Tji.inp (570 nodes)      #
+# Element type: 341 (first-order tetrahedron)               #
+#                                                           #
+# FrontISTR computes the sensitivity matrix W = K^-1 H      #
+# entirely by itself (adjoint method, 6 solves) and writes  #
+#   - sensitivity_Wdiff.vtk  (ParaView)                     #
+#   - Wdiff_fistr.txt        (global_id wx wy wz)           #
+# No Python post-processing is needed.                      #
+#                                                           #
+# Point_A / Point_O are read from sensitivity_points.dat    #
+# (this case: 19 103).                                      #
+############################################################
+!VERSION
+ 3
+!SOLUTION,TYPE=STATIC
+!BOUNDARY
+ fix, 1, 3, 0.0
+!TEMPERATURE
+ 19, 1.0
+############################################################
+# DUMPW=YES : after the displacement solve, reuse the       #
+#             factorization to solve the 6 adjoint problems  #
+#             and write W (Wdiff) + VTK.                      #
+# METHOD=DIRECT is required so the factorization can be      #
+# reused for the 6 back-substitutions.                       #
+# Do NOT set DUMPEXIT here: DUMPW needs the real solve.      #
+############################################################
+!SOLVER,METHOD=DIRECT,ITERLOG=NO,TIMELOG=YES,DUMPTYPE=MM,DUMPW=YES
+ 10000, 1
+ 1.0e-8, 1.0, 0.0
+!MATERIAL, NAME=FC300
+!ELASTIC, TYPE=ISOTROPIC
+ 130000000.0, 0.27
+!DENSITY
+ 7.4e-06
+!EXPANSION_COEFF
+ 1.2e-05
+!END

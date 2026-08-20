@@ -36,9 +36,9 @@ Wdiff_fistr.txt
 sensitivity_Wdiff.vtk
 
 # --- リファインメッシュ（post/refine_tji_mesh.py --levels 2 で再生成できる、数MB単位で重い） ---
-20260810_KinvH/model/010_Tji_fine_H_direct/FistrModel.msh
-20260810_KinvH/model/010_Tji_fine_H_direct/Quad4_FEM_Tji_fine.inp
-20260810_KinvH/sample/002_thermalSensitive/Inp_Data/Quad4_FEM_Tji_fine.inp
+20260810_KinvH/frontistr/model/010_Tji_fine_H_direct/FistrModel.msh
+20260810_KinvH/frontistr/model/010_Tji_fine_H_direct/Quad4_FEM_Tji_fine.inp
+20260810_KinvH/frontistr/sample/002_thermalSensitive/Inp_Data/Quad4_FEM_Tji_fine.inp
 
 # --- Python ---
 __pycache__/

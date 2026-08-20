@@ -1,0 +1,13 @@
+#
+# Global Control Data File - Quad4_FEM_01 (C3D4->341) static
+#
+!MESH, NAME=fstrMSH, TYPE=HECMW-ENTIRE
+FistrModel.msh
+!MESH, NAME=mesh, TYPE=HECMW-ENTIRE
+FistrModel.msh
+!CONTROL,NAME=fstrCNT
+FistrModel.cnt
+!RESULT,NAME=fstrRES,IO=OUT
+FistrModel.res
+!RESULT,NAME=vis_out,IO=OUT
+FistrModel.vis
