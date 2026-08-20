@@ -6,7 +6,7 @@
 `post/write_sensitivity_vtk.py`）で行っていた。FrontISTRからは $K$ と $H$ だけを取り出し、
 そのあとPythonで $W = K^{-1}H$ を解いて可視化していた、ということである。
 
-この手順では、その後半（$W$ の計算とVTK出力）を**FrontISTRの中だけで完結**させる。
+この手順では、その後半（ $W$ の計算とVTK出力）を**FrontISTRの中だけで完結**させる。
 新しいキーワード `DUMPW=YES` を `!SOLVER` カードに付けると、`fistr1` を1回実行するだけで
 
 - `sensitivity_Wdiff.vtk` … ParaViewでそのまま開ける感度場（ベクトル場）
@@ -15,7 +15,7 @@
 の2つが出力される。**Pythonは不要**になる。
 
 このためのパッチが `patch/frontistr_dumpw_tet.patch` である。
-既存の `DUMPH` パッチ（$H$ を出すだけ）とは**独立した別パッチ**で、
+既存の `DUMPH` パッチ（ $H$ を出すだけ）とは**独立した別パッチ**で、
 **別のソースフォルダ・別のビルドフォルダ・別のコマンド**で扱う。
 
 ### 1.1 適用範囲
@@ -30,7 +30,7 @@
 > 対応と、`K`・`H`・`W`・`VTK` の4つを1回の実行で出力する使い方は
 > `docs/14_手順_1次2次要素のW出力とvtk比較.md` にまとめてある。
 > DUMPWは1回の実行で `sensitivity_Wdiff.vtk`・`Wdiff_fistr.txt` に加え
-> `H_matrix.mtx`（$H$）も出力する（`DUMPTYPE=MM` を併用すれば $K$ も同時に出る）。
+> `H_matrix.mtx`（ $H$ ）も出力する（`DUMPTYPE=MM` を併用すれば $K$ も同時に出る）。
 
 ---
 
@@ -38,12 +38,12 @@
 
 ### 2.1 感度行列 W と Wdiff
 
-$K$ を（境界条件適用後の）全体剛性行列、$H$ を温度荷重変換行列とすると、
+$K$ を（境界条件適用後の）全体剛性行列、 $H$ を温度荷重変換行列とすると、
 「節点温度を1つ動かしたときに各自由度がどれだけ動くか」を表す感度行列は次で定義される。
 
 $$W = K^{-1} H$$
 
-$K$ は $(3 n_{\text{node}}) \times (3 n_{\text{node}})$、$H$ は $(3 n_{\text{node}}) \times n_{\text{node}}$ なので、
+$K$ は $(3 n_{\text{node}}) \times (3 n_{\text{node}})$ 、 $H$ は $(3 n_{\text{node}}) \times n_{\text{node}}$ なので、
 $W$ も $(3 n_{\text{node}}) \times n_{\text{node}}$ である。
 
 実際に欲しいのは、**測定点A（Point_A）と基準点O（Point_O）の相対変位**が、
@@ -51,28 +51,28 @@ $W$ も $(3 n_{\text{node}}) \times n_{\text{node}}$ である。
 
 $$W_{\text{diff}} = W[\text{Point A の3行}] - W[\text{Point O の3行}]$$
 
-という $3 \times n_{\text{node}}$ の行列になる。
+という ${3 \times n_{\text{node}}}$ の行列になる。
 
 ### 2.2 アジョイント（随伴）法：6回解くだけ
 
 $W_{\text{diff}}$ を素直に作ると $W$ の全列（＝節点数だけの回数）を解く必要があり、節点数が
-増えると非常に重い。そこで、$K$ が対称であること（$K^{-1}$ も対称）を使う。
+増えると非常に重い。そこで、 $K$ が対称であること（ $K^{-1}$ も対称）を使う。
 $W_{\text{diff}}$ の各行は、Point_A / Point_O の6自由度に対応する単位ベクトル $e_i$ を使って
 
 $$\text{row}_i = e_i^{\mathsf T} K^{-1} H = (K^{-1} e_i)^{\mathsf T} H = z_i^{\mathsf T} H$$
 
-と書ける（$z_i = K^{-1} e_i$）。つまり必要なのは **6本の $z_i$ を解くこと**だけで、
+と書ける（ $z_i = K^{-1} e_i$ ）。つまり必要なのは **6本の $z_i$ を解くこと**だけで、
 節点数がいくら増えても solve は6回で済む。詳しい導出は `docs/12` を参照。
 
 ### 2.3 FrontISTR内でどう実装したか
 
 FrontISTRは変位を求めるとき、すでに $K$ を組み立てて因子分解（LU）している。
 DUMPWはその**因子分解を使い回して**、6本の $z_i$ を**後退代入だけ**で解く。
-そのあと、$H$ をファイルに書かずに、要素ごとに標準ルーチン `TLOAD_C3` で
+そのあと、 $H$ をファイルに書かずに、要素ごとに標準ルーチン `TLOAD_C3` で
 $H_e$ の列を計算し、その場で $z_i$ と掛けて $W_{\text{diff}}$ に足し込む
-（$H$ をメモリに丸ごと持たない）。
+（ $H$ をメモリに丸ごと持たない）。
 
-具体的には、$g_c = z_{A,c} - z_{O,c}$（$c = x,y,z$ の3本）を作っておき、
+具体的には、 $g_c = z_{A,c} - z_{O,c}$ （ $c = x,y,z$ の3本）を作っておき、
 
 $$W_{\text{diff}}[c, n] = g_c^{\mathsf T} H[:,n]$$
 
@@ -82,7 +82,7 @@ $$W_{\text{diff}}[c, n] = g_c^{\mathsf T} H[:,n]$$
 
 固定された自由度は動けないので、その変位感度はゼロである。ところが直接法の
 境界条件処理（対角を大きくする方式）では、**固定点そのものを測定点に選んだ場合**
-（例：Point_Oが固定境界上にある場合）、$z_i$ の固定自由度に見かけの値が残り、
+（例：Point_Oが固定境界上にある場合）、 $z_i$ の固定自由度に見かけの値が残り、
 その節点の列だけ $W_{\text{diff}}$ が異常に大きくなる。
 
 そこでDUMPWは、6本の $z_i$ を解いたあと、**固定自由度の行を0にしてから** $g_c^{\mathsf T} H$ を
@@ -104,7 +104,7 @@ $$W_{\text{diff}}[c, n] = g_c^{\mathsf T} H[:,n]$$
 | `fistr1/src/common/fstr_setup.f90` | 読み取った `DUMPW` を内部配列 `svIarray(37)` に格納する配線を追加 |
 | `fistr1/src/lib/m_fstr.F90` | `Iarray(37)` の既定値を `0`（オフ）に初期化 |
 | `fistr1/src/analysis/static/fstr_solve_NonLinear.f90` | 変位solveの直後に `fstr_dump_sensitivity` を追加。因子分解を使い回して6本の $z_i$ を解き、固定自由度をゼロ化して `export` へ渡す |
-| `fistr1/src/analysis/static/fstr_ass_load.f90` | `fstr_sensitivity_read_dofs`（測定点の読み取り）、`fstr_sensitivity_export`（$H$ 出力＋$W_{\text{diff}} = g^{\mathsf T} H$ の加算、341/342対応）、`fstr_sensitivity_write_vtk`（VTK出力）を新規追加 |
+| `fistr1/src/analysis/static/fstr_ass_load.f90` | `fstr_sensitivity_read_dofs`（測定点の読み取り）、`fstr_sensitivity_export`（ $H$ 出力＋ $W_{\text{diff}} = g^{\mathsf T} H$ の加算、341/342対応）、`fstr_sensitivity_write_vtk`（VTK出力）を新規追加 |
 
 ---
 
@@ -210,7 +210,7 @@ DUMPW: wrote H_matrix.mtx, sensitivity_Wdiff.vtk, Wdiff_fistr.txt; n_node= 570  
 
 | ファイル | 内容 | 使い方 |
 |---|---|---|
-| `sensitivity_Wdiff.vtk` | 感度場 $W_{\text{diff}}$（ベクトル場 `Sensitivity`） | ParaViewで開いてGlyphやWarp、色分け表示 |
+| `sensitivity_Wdiff.vtk` | 感度場 $W_{\text{diff}}$ （ベクトル場 `Sensitivity`） | ParaViewで開いてGlyphやWarp、色分け表示 |
 | `Wdiff_fistr.txt` | `# global_node_id  Wdiff_x  Wdiff_y  Wdiff_z` の表 | Excelやスクリプトで数値確認・比較 |
 
 `sensitivity_Wdiff.vtk` はレガシーASCII形式のUnstructured Grid（VTK_TETRA）で、
@@ -262,8 +262,8 @@ Python版アジョイント結果 `Wdiff_fistr_tji.npy`（`post/wdiff_adjoint.py
 | | DUMPH（既存） | DUMPW（この手順） |
 |---|---|---|
 | キーワード | `!SOLVER,...,DUMPH=YES` | `!SOLVER,...,DUMPW=YES` |
-| 出力 | `H_matrix.mtx`（$H$ そのもの） | `sensitivity_Wdiff.vtk` + `Wdiff_fistr.txt`（$W_{\text{diff}}$） |
+| 出力 | `H_matrix.mtx`（ $H$ そのもの） | `sensitivity_Wdiff.vtk` + `Wdiff_fistr.txt`（ $W_{\text{diff}}$ ） |
 | solveするか | しない（`DUMPEXIT=YES` で即終了） | する（因子分解を作り、6本の $z_i$ を後退代入） |
-| その後のPython | 必要（$W$ 計算＋VTK） | **不要**（FrontISTR内で完結） |
+| その後のPython | 必要（ $W$ 計算＋VTK） | **不要**（FrontISTR内で完結） |
 | パッチ | `frontistr_dumph_341.patch` | `frontistr_dumpw_tet.patch`（独立） |
 | ビルド先 | 通常の改造版ビルド | 別フォルダ `build-dumpw` |

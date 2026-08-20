@@ -135,15 +135,17 @@ def main():
     out1 = os.path.join(ROOT, 'docs/img/dumpw_wdiff_python_009_011_012.png')
     fig.savefig(out1, dpi=120, bbox_inches='tight'); print('saved', out1)
 
-    # --- 図2: 342だけ、色スケール上限を 4.7e-4（左）と その0.5倍=2.35e-4（右）で比較 ---
+    # --- 図2: 左=1次(341)を上限4.7e-4、右=2次(342)を上限0.5倍=2.35e-4。
+    #          2次のコンター上限をピークに合わせて半分にすると、分布は1次とそっくりになる。
     fig2, axes2 = plt.subplots(1, 2, figsize=(11, 6.2))
-    n1, c1 = draw_panel(axes2[0], nodes342, ids342, w012, VMAX,
-                        'FrontISTR 012 (342)  contour max = 4.7e-4  (same as fig.1)')
+    n1, c1 = draw_panel(axes2[0], nodes341, ids341, w011, VMAX,
+                        'FrontISTR 011 (341, 1st order)  contour max = 4.7e-4')
     add_colorbar(fig2, axes2[0], n1, c1, VMAX)
     n2, c2 = draw_panel(axes2[1], nodes342, ids342, w012, 0.5 * VMAX,
-                        'FrontISTR 012 (342)  contour max = 2.35e-4  (0.5x)')
+                        'FrontISTR 012 (342, 2nd order)  contour max = 2.35e-4 (0.5x)')
     add_colorbar(fig2, axes2[1], n2, c2, 0.5 * VMAX)
-    fig2.suptitle('2nd-order (342): contour max 4.7e-4 vs half (0.5x) 2.35e-4', fontsize=12)
+    fig2.suptitle('1st-order (341) vs 2nd-order (342 at half-scale 0.5x): '
+                  'the distribution matches', fontsize=12)
     out2 = os.path.join(ROOT, 'docs/img/dumpw_wdiff_342_halfscale.png')
     fig2.savefig(out2, dpi=120, bbox_inches='tight'); print('saved', out2)
 

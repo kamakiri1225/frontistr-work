@@ -4,7 +4,7 @@
 
 | パッチ | 追加キーワード | 出力 | Pythonの後処理 |
 |---|---|---|---|
-| `frontistr_dumph_341.patch` | `!SOLVER,...,DUMPH=YES` | `H_matrix.mtx`（温度荷重行列 $H$ ） | 必要（$W$ 計算とVTKはPython） |
+| `frontistr_dumph_341.patch` | `!SOLVER,...,DUMPH=YES` | `H_matrix.mtx`（温度荷重行列 $H$ ） | 必要（ $W$ 計算とVTKはPython） |
 | `frontistr_dumpw_tet.patch` | `!SOLVER,...,DUMPW=YES` | `sensitivity_Wdiff.vtk` + `Wdiff_fistr.txt`（感度行列 $W_{\text{diff}}$ ） | **不要**（FrontISTR内で完結） |
 
 以下、まず `DUMPH` を、続いて `DUMPW` を解説する。
@@ -55,7 +55,7 @@ $B$ はひずみ-変位マトリクス、 $D$ は弾性マトリクス、 $\alph
 $\Delta T(x) = \sum_{k=1}^4 N_k(x)\,T_k$ は4つの節点温度 $T_e=(T_1,T_2,T_3,T_4)$ から
 形状関数 $N_k$ で内挿した温度分布である。
 
-$f_e$ は $T_e$ について**線形**なので、 $12\times4$ の要素行列 $H_e$ が存在して
+$f_e$ は $T_e$ について**線形**なので、 ${12\times4}$ の要素行列 $H_e$ が存在して
 
 $$f_e = H_e\, T_e$$
 
@@ -119,7 +119,7 @@ MatrixMarket形式の読み込み側が、同じ`(行, 列)`の値を自動的�
 $$H_{e,A}[:,\,\text{局所節点4}] = [-141.30,\ -141.30,\ -141.30,\ \ 141.30,\ \ 0,\ \ 0,\ \ 0,\ \ 141.30,\ \ 0,\ \ 0,\ \ 0,\ \ 141.30]$$
 
 要素Aの節点順は1,2,3,4なので、この12個は「節点1のx,y,z、節点2のx,y,z、節点3のx,y,z、
-**節点4のx,y,z**」の順。最後の3つ（ $0,\ 0,\ 141.30$ ）が**節点4自身の自由度**への書き込みである。
+**節点4のx,y,z**」の順。最後の3つ（ ${0,\ 0,\ 141.30}$ ）が**節点4自身の自由度**への書き込みである。
 
 **手順2**: 要素Bだけで $H_e$ を計算する。要素Bの節点順は4,5,6,7なので、
 **局所節点1＝節点4**（列0）を見る。
@@ -157,7 +157,7 @@ $$(11,\text{節点4}): \ 141.30 + (-141.30) = 0.00$$
 
 Fortran側は一度も「足し算」をしていない。要素ごとに書き出すだけで、
 MatrixMarketの読み込み側が勝手に正しい全体行列を組み立ててくれる
-（3行目の $141.30+(-141.30)=0$ のように、値が相殺されるケースも普通に起こる）。
+（3行目の ${141.30+(-141.30)=0}$ のように、値が相殺されるケースも普通に起こる）。
 
 ## 実務上の注意点
 
@@ -231,7 +231,7 @@ $W = K^{-1}H$ から取り出した測定点差 $W_{\text{diff}}$ を、`fistr1`
 
 - `sensitivity_Wdiff.vtk` … ParaViewで開ける $W_{\text{diff}}$ のベクトル場（フィールド名 `Sensitivity`）
 - `Wdiff_fistr.txt` … `節点番号 wx wy wz` の素のテキスト
-- `H_matrix.mtx` … 温度荷重変換行列 $H$（MatrixMarket形式。DUMPHと同じ内容を副産物として出す）
+- `H_matrix.mtx` … 温度荷重変換行列 $H$ （MatrixMarket形式。DUMPHと同じ内容を副産物として出す）
 
 `DUMPH`との一番の違いは、**Pythonの後処理が要らない**こと。`DUMPH`は $H$ を出すだけで、
 $W = K^{-1}H$ を解くのもVTKにするのもPython（`post/wdiff_adjoint.py`、
@@ -243,20 +243,20 @@ $W = K^{-1}H$ を解くのもVTKにするのもPython（`post/wdiff_adjoint.py`�
 
 ## $W_{\text{diff}}$ とは何か
 
-$K$ を境界条件適用後の全体剛性行列、$H$ を温度荷重変換行列とすると、
+$K$ を境界条件適用後の全体剛性行列、 $H$ を温度荷重変換行列とすると、
 「節点温度を1つ動かすと各自由度がどれだけ動くか」を表す感度行列は次で定義される。
 
 $$W = K^{-1} H$$
 
 欲しいのは測定点A（Point_A）と基準点O（Point_O）の**相対変位**の感度なので、
-$W$ からPoint_Aの3行とPoint_Oの3行を取り出して引き算した $3 \times n_{\text{node}}$ の行列を作る。
+$W$ からPoint_Aの3行とPoint_Oの3行を取り出して引き算した ${3 \times n_{\text{node}}}$ の行列を作る。
 
 $$W_{\text{diff}} = W[\text{Point A の3行}] - W[\text{Point O の3行}]$$
 
 ## アジョイント（随伴）法：solveは6回だけ
 
 $W_{\text{diff}}$ を素直に作ると $W$ の全列（＝節点数だけ）を解く必要があり重い。
-$K$ の対称性（$K^{-1}$ も対称）を使うと、$W_{\text{diff}}$ の各行は、Point_A / Point_O の
+$K$ の対称性（ $K^{-1}$ も対称）を使うと、 $W_{\text{diff}}$ の各行は、Point_A / Point_O の
 6自由度に対応する単位ベクトル $e_i$ を使って次のように書ける。
 
 $$\text{row}_i = e_i^{\mathsf T} K^{-1} H = (K^{-1} e_i)^{\mathsf T} H = z_i^{\mathsf T} H$$
@@ -279,7 +279,7 @@ $$\text{row}_i = e_i^{\mathsf T} K^{-1} H = (K^{-1} e_i)^{\mathsf T} H = z_i^{\m
 
 変位を解いた**直後**に呼ばれる。この時点でFrontISTRは $K$ を因子分解（LU）済みなので、
 それを**使い回す**。具体的には`hecMATmpc%Iarray(97)=0, Iarray(98)=0`として
-「もう因子分解しない」ようにしてから、6本の右辺 $e_i$（Point_A x/y/z, Point_O x/y/z）を
+「もう因子分解しない」ようにしてから、6本の右辺 $e_i$ （Point_A x/y/z, Point_O x/y/z）を
 順に与えて`solve_LINEQ`を呼ぶ。これで6本の $z_i$ が**後退代入だけ**で求まる。
 
 測定点（Point_A, Point_O）は、実行フォルダの`sensitivity_points.dat`
@@ -301,23 +301,23 @@ $z_i$ の固定自由度に見かけの値が残り、その節点の列だけ $
 
 ### `fstr_sensitivity_export`（`fstr_ass_load.f90`）
 
-6本の $z_i$ を受け取り、$g_c = z_{A,c} - z_{O,c}$（$c = x,y,z$）を作って
+6本の $z_i$ を受け取り、 $g_c = z_{A,c} - z_{O,c}$ （ $c = x,y,z$ ）を作って
 
 $$W_{\text{diff}}[c, n] = g_c^{\mathsf T} H[:,n]$$
 
-を計算する。ここがポイントで、$H$ を**メモリに丸ごと持たない**。要素ごとに、標準ルーチン
+を計算する。ここがポイントで、 $H$ を**メモリに丸ごと持たない**。要素ごとに、標準ルーチン
 `TLOAD_C3`（`DUMPH`でも使ったもの）で局所節点 $k$ に単位温度を与えた要素荷重ベクトル
 $H_e[:,k]$ を求め、（1）その値を `H_matrix.mtx` に書き出しつつ、（2）その場で $g_c$ と掛けて
-$W_{\text{diff}}$ に足し込む。$H$ の要素寄与を「作ってはすぐ使って捨てる」ので、大きな $H$ を
+$W_{\text{diff}}$ に足し込む。 $H$ の要素寄与を「作ってはすぐ使って捨てる」ので、大きな $H$ を
 メモリに保存する必要がない。
 
 **一次・二次の切り替え**：対象要素かどうかと節点数は `fstr_sensitivity_solid_nnode(ic_type)`
 （341→4, 342→10, それ以外→0）で判定し、`TLOAD_C3` には実際の `ic_type` と `nn` を渡す。
-`TLOAD_C3` が内部で正しい形状関数・$B$・ガウス積分を選ぶので、二次要素の式を自前で書く必要はない。
+`TLOAD_C3` が内部で正しい形状関数・ $B$ ・ガウス積分を選ぶので、二次要素の式を自前で書く必要はない。
 
 ### `fstr_sensitivity_write_vtk`（`fstr_ass_load.f90`）
 
-$W_{\text{diff}}$（$3 \times n_{\text{node}}$）を、レガシーASCII形式のVTK
+$W_{\text{diff}}$ （ ${3 \times n_{\text{node}}}$ ）を、レガシーASCII形式のVTK
 （Unstructured Grid、`VECTORS Sensitivity`）で書き出す。要素タイプでセルの書き方を変える。
 
 - 341 … `VTK_TETRA`（セル型`10`）、4節点そのまま
