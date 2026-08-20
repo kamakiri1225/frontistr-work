@@ -18,6 +18,7 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import matplotlib.tri as mtri
 from matplotlib.colors import Normalize
 from matplotlib import cm
 
@@ -92,16 +93,25 @@ def main():
 
     norm = Normalize(vmin=VMIN, vmax=VMAX)
     cmap = cm.get_cmap('jet')
+    levels = np.linspace(VMIN, VMAX, 25)
 
     fig, axes = plt.subplots(1, 4, figsize=(20, 6.2))
     for ax, (title, nodes, ids, w, msize) in zip(axes, panels):
         xyz = np.array([nodes[n] for n in ids])
         mag = np.array([np.linalg.norm(w[n]) for n in ids])
         su, sv, depth = project(xyz, AZIM, ELEV)
-        # 感度の大きい点を後（上）に描いて、ホットスポットが隠れないようにする
-        order = np.argsort(mag)
-        ax.scatter(su[order], sv[order], c=mag[order], cmap=cmap, norm=norm,
-                   s=msize, edgecolors='none')
+
+        # 投影した点でドロネー三角形分割し、塗り分けコンター(tricontourf)にする。
+        # T字形の凹み(くびれ)を橋渡しする細長い三角形は、辺が長いのでマスクして除く。
+        tri = mtri.Triangulation(su, sv)
+        t = tri.triangles
+        d01 = np.hypot(su[t[:, 0]] - su[t[:, 1]], sv[t[:, 0]] - sv[t[:, 1]])
+        d12 = np.hypot(su[t[:, 1]] - su[t[:, 2]], sv[t[:, 1]] - sv[t[:, 2]])
+        d20 = np.hypot(su[t[:, 2]] - su[t[:, 0]], sv[t[:, 2]] - sv[t[:, 0]])
+        maxedge = np.maximum(np.maximum(d01, d12), d20)
+        tri.set_mask(maxedge > 2.5 * np.median(maxedge))
+
+        ax.tricontourf(tri, mag, levels=levels, cmap=cmap, norm=norm, extend='max')
         # Point_A / Point_O を印
         for nid, mk, lab in [(POINT_A, '^', 'Point_A(19)'), (POINT_O, 's', 'Point_O(103)')]:
             if nid in nodes:

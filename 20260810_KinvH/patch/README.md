@@ -62,7 +62,9 @@ $$f_e = H_e\, T_e$$
 と書ける。パッチは $H_e$ を数式的に導出するのではなく、局所節点1つずつに単位温度を
 与えて`TLOAD_C3`を呼び出すことで、 $H_e$ の列を1本ずつ求めている。
 
-$$T_e = e_k \ (k=1,\dots,4) \quad\Longrightarrow\quad \texttt{TLOAD\_C3}(\dots,\,T_e,\,\dots) = f_e = H_e\,e_k = H_e[:,k]$$
+`TLOAD_C3(..., T_e, ...)` にこの $T_e$ を渡すと $f_e = H_e e_k = H_e[:,k]$ が返る。
+
+$$T_e = e_k \ (k=1,\dots,4) \quad\Longrightarrow\quad f_e = H_e\,e_k = H_e[:,k]$$
 
 これは`post/build_H_tji.py`が全体（グローバル）レベルでやっている
 「節点ごとに単位温度を与えて集める」というやり方の、**要素レベル版**に相当する。
@@ -249,7 +251,7 @@ $$W = K^{-1} H$$
 欲しいのは測定点A（Point_A）と基準点O（Point_O）の**相対変位**の感度なので、
 $W$ からPoint_Aの3行とPoint_Oの3行を取り出して引き算した $3 \times n_{\text{node}}$ の行列を作る。
 
-$$W_{\text{diff}} = W[\text{Point\_A の3行}] - W[\text{Point\_O の3行}]$$
+$$W_{\text{diff}} = W[\text{Point A の3行}] - W[\text{Point O の3行}]$$
 
 ## アジョイント（随伴）法：solveは6回だけ
 

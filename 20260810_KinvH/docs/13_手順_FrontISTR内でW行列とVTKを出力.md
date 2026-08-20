@@ -49,7 +49,7 @@ $W$ も $(3 n_{\text{node}}) \times n_{\text{node}}$ である。
 実際に欲しいのは、**測定点A（Point_A）と基準点O（Point_O）の相対変位**が、
 各節点温度でどう変わるか、である。これは $W$ から、Point_Aの3行とPoint_Oの3行を取り出して引き算した
 
-$$W_{\text{diff}} = W[\text{Point\_A の3行}] - W[\text{Point\_O の3行}]$$
+$$W_{\text{diff}} = W[\text{Point A の3行}] - W[\text{Point O の3行}]$$
 
 という $3 \times n_{\text{node}}$ の行列になる。
 
