@@ -32,6 +32,8 @@ dump_matrix_*
 K_*.csv
 H_*.csv
 H.txt
+Wdiff_fistr.txt
+sensitivity_Wdiff.vtk
 
 # --- リファインメッシュ（post/refine_tji_mesh.py --levels 2 で再生成できる、数MB単位で重い） ---
 20260810_KinvH/model/010_Tji_fine_H_direct/FistrModel.msh

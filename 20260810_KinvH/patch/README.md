@@ -1,3 +1,16 @@
+# FrontISTR改造パッチの解説（DUMPH / DUMPW）
+
+このフォルダには**独立した2つのパッチ**がある。用途に応じて片方だけ当てればよい。
+
+| パッチ | 追加キーワード | 出力 | Pythonの後処理 |
+|---|---|---|---|
+| `frontistr_dumph_341.patch` | `!SOLVER,...,DUMPH=YES` | `H_matrix.mtx`（温度荷重行列 $H$ ） | 必要（$W$ 計算とVTKはPython） |
+| `frontistr_dumpw_tet.patch` | `!SOLVER,...,DUMPW=YES` | `sensitivity_Wdiff.vtk` + `Wdiff_fistr.txt`（感度行列 $W_{\text{diff}}$ ） | **不要**（FrontISTR内で完結） |
+
+以下、まず `DUMPH` を、続いて `DUMPW` を解説する。
+
+---
+
 # `frontistr_dumph_341.patch` の解説
 
 ## 概要
@@ -202,3 +215,126 @@ Pythonの`multiprocessing`＝プロセス並列）を例に、違いを整理す
 **まとめ**: 「独立性重視・複数マシンにまたがりたい・GILを回避したい」ならプロセス並列
 （MPIや`multiprocessing`）、「同じデータを共有して細かい計算ループを高速化したい・
 1台のマシンで完結する」ならスレッド並列（OpenMP）、という使い分けになる。
+
+---
+
+# `frontistr_dumpw_tet.patch` の解説
+
+## 概要
+
+このパッチは、`!SOLVER`カードに新しいキーワード`DUMPW`を追加する。`DUMPW=YES`を指定すると、
+四面体**一次要素（`341`, C3D4）と二次要素（`342`, C3D10）**について、**感度行列**
+$W = K^{-1}H$ から取り出した測定点差 $W_{\text{diff}}$ を、`fistr1`を1回実行するだけで出力できる。
+出力は次の3つ（`DUMPTYPE=MM`を併用すれば $K$ も同時に出て、K・H・W・VTKの4つがそろう）。
+
+- `sensitivity_Wdiff.vtk` … ParaViewで開ける $W_{\text{diff}}$ のベクトル場（フィールド名 `Sensitivity`）
+- `Wdiff_fistr.txt` … `節点番号 wx wy wz` の素のテキスト
+- `H_matrix.mtx` … 温度荷重変換行列 $H$（MatrixMarket形式。DUMPHと同じ内容を副産物として出す）
+
+`DUMPH`との一番の違いは、**Pythonの後処理が要らない**こと。`DUMPH`は $H$ を出すだけで、
+$W = K^{-1}H$ を解くのもVTKにするのもPython（`post/wdiff_adjoint.py`、
+`post/write_sensitivity_vtk.py`）だった。`DUMPW`はその後半をFrontISTRの中で全部やる。
+
+手順の全体像は `docs/13`（一次要素中心）と `docs/14`（二次要素対応・K/H/W/VTKの4出力・
+一次/二次の理論式とプログラム解説・4スレッド速度比較）にまとめてある。ここでは
+パッチが何をしているかを数式とコードの対応で説明する。
+
+## $W_{\text{diff}}$ とは何か
+
+$K$ を境界条件適用後の全体剛性行列、$H$ を温度荷重変換行列とすると、
+「節点温度を1つ動かすと各自由度がどれだけ動くか」を表す感度行列は次で定義される。
+
+$$W = K^{-1} H$$
+
+欲しいのは測定点A（Point_A）と基準点O（Point_O）の**相対変位**の感度なので、
+$W$ からPoint_Aの3行とPoint_Oの3行を取り出して引き算した $3 \times n_{\text{node}}$ の行列を作る。
+
+$$W_{\text{diff}} = W[\text{Point\_A の3行}] - W[\text{Point\_O の3行}]$$
+
+## アジョイント（随伴）法：solveは6回だけ
+
+$W_{\text{diff}}$ を素直に作ると $W$ の全列（＝節点数だけ）を解く必要があり重い。
+$K$ の対称性（$K^{-1}$ も対称）を使うと、$W_{\text{diff}}$ の各行は、Point_A / Point_O の
+6自由度に対応する単位ベクトル $e_i$ を使って次のように書ける。
+
+$$\text{row}_i = e_i^{\mathsf T} K^{-1} H = (K^{-1} e_i)^{\mathsf T} H = z_i^{\mathsf T} H$$
+
+つまり必要なのは**6本の $z_i = K^{-1} e_i$ を解くこと**だけ。節点数が増えてもsolveは6回のまま。
+
+## どこにコードが追加されているか
+
+| ファイル | 変更内容 |
+|---|---|
+| `fistr1/src/common/fstr_ctrl_common.f90` | `!SOLVER`カードの新キーワード`DUMPW`（`NO`/`YES`）の読み取りを追加 |
+| `fistr1/src/common/fstr_setup.f90` | 読み取った`DUMPW`を内部配列`svIarray(37)`に格納する配線を追加 |
+| `fistr1/src/lib/m_fstr.F90` | `Iarray(37)`の既定値を`0`（オフ）に初期化 |
+| `fistr1/src/analysis/static/fstr_solve_NonLinear.f90` | 変位solveの直後に`fstr_dump_sensitivity`を追加（6本の $z_i$ を解く司令塔） |
+| `fistr1/src/analysis/static/fstr_ass_load.f90` | `fstr_sensitivity_read_dofs` / `fstr_sensitivity_solid_nnode`（341→4, 342→10節点）/ `fstr_sensitivity_export`（H出力＋Wdiff加算、341/342対応）/ `fstr_sensitivity_write_vtk` を新規追加 |
+
+## 各ルーチンが何をするか
+
+### `fstr_dump_sensitivity`（司令塔、`fstr_solve_NonLinear.f90`）
+
+変位を解いた**直後**に呼ばれる。この時点でFrontISTRは $K$ を因子分解（LU）済みなので、
+それを**使い回す**。具体的には`hecMATmpc%Iarray(97)=0, Iarray(98)=0`として
+「もう因子分解しない」ようにしてから、6本の右辺 $e_i$（Point_A x/y/z, Point_O x/y/z）を
+順に与えて`solve_LINEQ`を呼ぶ。これで6本の $z_i$ が**後退代入だけ**で求まる。
+
+測定点（Point_A, Point_O）は、実行フォルダの`sensitivity_points.dat`
+（1行に「Point_Aのグローバル節点番号 Point_Oのグローバル節点番号」）から読み、
+`fstr_sensitivity_read_dofs`がFrontISTR内部のローカル節点番号・自由度番号に変換する。
+
+### 固定自由度のゼロ化（重要）
+
+固定された自由度は動けないので変位感度はゼロのはずだが、直接法の境界条件処理
+（対角を大きくする方式）では、**固定点そのものを測定点にした場合**（例：Point_Oが固定境界上）、
+$z_i$ の固定自由度に見かけの値が残り、その節点の列だけ $W_{\text{diff}}$ が発散する。
+
+そこで6本の $z_i$ を解いたあと、**固定自由度の行を0にしてから** $z_i^{\mathsf T} H$ を計算する。
+固定自由度の一覧は、`fstr_AddBC`と同じ境界条件データ（`fstrSOLID%BOUNDARY_ngrp_*`）を
+たどって作っている。これはPython版の`Z[fixed_dof, :] = 0.0`と同じ処理である。
+
+> この処理を入れる前は、`model/011_Tji_DUMPW`（Point_O=節点103は固定境界上）で
+> 列103だけが `9.0e+04` などに発散した。ゼロ化を入れたらPython版と相対差 `2.4e-8` で一致した。
+
+### `fstr_sensitivity_export`（`fstr_ass_load.f90`）
+
+6本の $z_i$ を受け取り、$g_c = z_{A,c} - z_{O,c}$（$c = x,y,z$）を作って
+
+$$W_{\text{diff}}[c, n] = g_c^{\mathsf T} H[:,n]$$
+
+を計算する。ここがポイントで、$H$ を**メモリに丸ごと持たない**。要素ごとに、標準ルーチン
+`TLOAD_C3`（`DUMPH`でも使ったもの）で局所節点 $k$ に単位温度を与えた要素荷重ベクトル
+$H_e[:,k]$ を求め、（1）その値を `H_matrix.mtx` に書き出しつつ、（2）その場で $g_c$ と掛けて
+$W_{\text{diff}}$ に足し込む。$H$ の要素寄与を「作ってはすぐ使って捨てる」ので、大きな $H$ を
+メモリに保存する必要がない。
+
+**一次・二次の切り替え**：対象要素かどうかと節点数は `fstr_sensitivity_solid_nnode(ic_type)`
+（341→4, 342→10, それ以外→0）で判定し、`TLOAD_C3` には実際の `ic_type` と `nn` を渡す。
+`TLOAD_C3` が内部で正しい形状関数・$B$・ガウス積分を選ぶので、二次要素の式を自前で書く必要はない。
+
+### `fstr_sensitivity_write_vtk`（`fstr_ass_load.f90`）
+
+$W_{\text{diff}}$（$3 \times n_{\text{node}}$）を、レガシーASCII形式のVTK
+（Unstructured Grid、`VECTORS Sensitivity`）で書き出す。要素タイプでセルの書き方を変える。
+
+- 341 … `VTK_TETRA`（セル型`10`）、4節点そのまま
+- 342 … `VTK_QUADRATIC_TETRA`（セル型`24`）、10節点。中間節点はFrontISTR公式の
+  VTK出力（`hecmw_fstr_output_vtk.c` の `table342`）と同じ順（`tbl342=(/1,2,3,4,7,5,6,8,9,10/)`）に
+  並べ替える。$K$・$H$・$W$ の計算のほうは `elem_node_item` をそのまま `TLOAD_C3` に渡すだけなので、
+  この並べ替えは**VTKの見た目のためだけ**に必要。
+
+## 使い方（最短）
+
+```text
+!SOLVER,METHOD=DIRECT,ITERLOG=NO,TIMELOG=YES,DUMPTYPE=MM,DUMPW=YES
+```
+
+- `METHOD=DIRECT` … 直接法。因子分解を6回の後退代入で使い回すために必要。
+- `DUMPTYPE=MM` … $K$ も同時に出す（`dump_matrix_1_0.mm`）。K・H・W・VTKの4つがそろう。
+- `DUMPEXIT=YES`は**付けない**（実際に解いて因子分解を作る必要があるため）。
+- 実行フォルダに`sensitivity_points.dat`（例：`19 103`）を置く。
+
+適用範囲は`DUMPH`と同じく3次元ソリッド・線形静解析・単一領域で、要素は**四面体一次`341`
+および二次`342`**に対応する。二次要素メッシュは `post/convert_341_to_342.py` で一次メッシュから
+作れる。詳細は `docs/14`。
