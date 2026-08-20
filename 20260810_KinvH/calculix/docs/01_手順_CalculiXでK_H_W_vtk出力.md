@@ -234,15 +234,72 @@ for(cc=0;cc<3;cc++){               /* c = x,y,z */
 }
 ```
 
-Point_A / Point_O は **`sensitivity_points.dat`**（1 行 `19 103`、`#`/`!` はコメント）で指定し、
-`nactdof` で方程式番号に直す（node19 → eq 43,44,45）。**このファイルが無い／読めないと、
-必要なファイル名と書式を表示してエラー停止する**（FrontISTR DUMPW と同じ）。
+Point_A / Point_O は **`sensitivity_points.dat`**（1 行 `19 103`、`#`/`!` はコメント）で指定する。
+**このファイルが無い／読めないと、必要なファイル名と書式を表示してエラー停止する**
+（FrontISTR DUMPW と同じ）。読み取りとエラー処理の実コード：
+
+```c
+/* Point_A / Point_O は必須。無い／読めなければ書式を表示して停止 */
+FILE *fp=fopen("sensitivity_points.dat","r"); char ln[256];
+if(fp!=NULL){
+  while(fgets(ln,256,fp)!=NULL){
+    if(ln[0]=='#'||ln[0]=='!'||ln[0]=='\n') continue;   /* コメント・空行を飛ばす */
+    if(sscanf(ln,"%d %d",&pa_i,&po_i)==2) break;         /* pa_i=Point_A, po_i=Point_O */
+  }
+  fclose(fp);
+}
+if(pa_i<=0||po_i<=0){
+  printf(" CCX_DUMPKH ERROR: cannot read \"sensitivity_points.dat\".\n");
+  printf("   Put a file \"sensitivity_points.dat\" next to the input, with ONE line:\n");
+  printf("     <Point_A global node id> <Point_O global node id>\n");
+  printf("   (# or ! start a comment). Example:\n");
+  printf("       #Point_A, Point_O\n       19 103\n");
+  FORTRAN(stop,());
+}
+```
+
+グローバル節点番号を、`nactdof` で**方程式番号**に直す（node19 → eq 43,44,45。固定は 0 以下）：
+
+```c
+for(cc=0;cc<3;cc++){                              /* cc = 0,1,2 = x,y,z */
+  eqA[cc]=nactdof[mt*(pa_i-1)+(cc+1)];             /* Point_A の x/y/z 方程式 */
+  eqO[cc]=(po_i>0)?nactdof[mt*(po_i-1)+(cc+1)]:0;  /* Point_O（固定なら<=0） */
+}
+```
+
+（`mt=mi[1]+1`。`nactdof[mt*(node-1)+dir]` の dir は 1=x,2=y,3=z。上の 3.4 の `eqA[cc]` が
+これ。）
 
 ### 3.5 VTK 出力（CalculiX 内部）
 
 $W_{\text{diff}}$ （節点ごとの 3 成分）を、節点座標 `co` と C3D4 の連結 `kon`/`ipkon` を使って
 レガシー ASCII VTK（`VTK_TETRA`、ベクトル場 `Sensitivity`）で `sensitivity_Wdiff_ccx.vtk` に
-書き出す。`Wdiff_ccx.txt`（`node wx wy wz`）も同時に出す。
+書き出す。`Wdiff_ccx.txt`（`node wx wy wz`）も同時に出す。実コード：
+
+```c
+ITG nc4=0;
+for(jj=0;jj<*ne;jj++) if(strcmp1(&lakon[8*jj],"C3D4")==0) nc4++;   /* C3D4 要素数 */
+fp=fopen("sensitivity_Wdiff_ccx.vtk","w");
+fprintf(fp,"# vtk DataFile Version 2.0\n");
+fprintf(fp,"CalculiX sensitivity Wdiff (Point_A - Point_O per unit nodal temperature)\n");
+fprintf(fp,"ASCII\nDATASET UNSTRUCTURED_GRID\n");
+fprintf(fp,"POINTS %ld double\n",(long)(*nk));                     /* 節点座標 co */
+for(nn=0;nn<*nk;nn++)
+  fprintf(fp,"%.12e %.12e %.12e\n",co[3*nn],co[3*nn+1],co[3*nn+2]);
+fprintf(fp,"CELLS %ld %ld\n",(long)nc4,(long)(5*nc4));             /* 連結 kon/ipkon（0始まり） */
+for(jj=0;jj<*ne;jj++){
+  if(strcmp1(&lakon[8*jj],"C3D4")!=0) continue;
+  fprintf(fp,"4 %ld %ld %ld %ld\n",
+          (long)(kon[ipkon[jj]+0]-1),(long)(kon[ipkon[jj]+1]-1),
+          (long)(kon[ipkon[jj]+2]-1),(long)(kon[ipkon[jj]+3]-1));
+}
+fprintf(fp,"CELL_TYPES %ld\n",(long)nc4);
+for(ic4=0;ic4<nc4;ic4++) fprintf(fp,"10\n");                       /* 10 = VTK_TETRA */
+fprintf(fp,"POINT_DATA %ld\nVECTORS Sensitivity double\n",(long)(*nk));
+for(nn=0;nn<*nk;nn++)                                             /* Wdiff をベクトル場に */
+  fprintf(fp,"%.12e %.12e %.12e\n",Wd[0*(*nk)+nn],Wd[1*(*nk)+nn],Wd[2*(*nk)+nn]);
+fclose(fp);
+```
 
 ### 3.6 実行（K・H・W・VTK を 1 回で）
 
