@@ -1,4 +1,0 @@
-interface:
-  display_name: "WordPress CAEブログ作成"
-  short_description: "CAE技術記事をWordPressブロックHTMLで作成"
-  default_prompt: "Use $write-wordpress-cae-blog to create a WordPress-ready CAE technical blog article."

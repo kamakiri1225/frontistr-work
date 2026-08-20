@@ -60,3 +60,8 @@ run_dumpkh.log
 ccx_*.dat
 ccx_*.sta
 spooles.out
+
+# --- agent / editor tooling (local only, not project deliverables) ---
+.agents/
+.claude/
+.codex/
