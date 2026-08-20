@@ -6,9 +6,9 @@ FrontISTR で作った熱感度解析（剛性 `K`、温度荷重 `H`、感度 `
 **CalculiX (ccx) でも同じようにできるか**を確認した記録。結論は **できる**。
 
 - CalculiX を**ソースからビルド**（インストール）する手順（SPOOLES + ccx、sudo 不要）
-- CalculiX を**改造**して `K` と `H` を出力する（**どのファイルをどう変えたか**）
-- `W` と VTK を出す後処理（Python アジョイント）
-- FrontISTR の結果との一致（相関 0.9995、W 相対差 約 3%）
+- CalculiX を**改造**して `K`・`H`・`W`・VTK を**すべてソルバ内部**で出力する
+  （**どのファイルをどう変えたか＋数式とプログラムの対応**： $K_e$ ・ $K$ ・ $H_e$ ・ $H$ ・ $W$ ・VTK）
+- FrontISTR の結果との一致（相関 0.9995、W 相対差 約 3%）と、4 並列の計算時間比較
 
 対象は **一次四面体 C3D4（＝FrontISTR の 341）だけ**。モデルは FrontISTR と同じ
 Quad4_FEM_Tji（570 節点）で、元の `Quad4_FEM_Tji.inp` が既に CalculiX/Abaqus 形式
@@ -138,9 +138,17 @@ CalculiX は**固定(SPC)自由度を系から除く**ので、`K` は「アク�
 neq×neq で出る（`neq=1647`。全 3×570=1710 から固定 63 を除いた数）。この対応表が
 `nactdof`（`(節点, 方向) -> 方程式番号`、0 以下は固定）。改造はこの `mafillsmmain` の直後に入れた。
 
-### 3.2 K の出力（そのまま書き出すだけ）
+### 3.2 K の出力（CalculiX が組んだものをそのまま書き出す）
 
-`ad`/`au`/`icol`/`irow` を MatrixMarket（対称・下三角）で `K.mtx` に出す。実コードの要点：
+**要素剛性 $K_e$**（各要素）と**全体剛性 $K$**（組み立て）は次式。CalculiX が標準で計算する。
+
+$$K_e = \int_{V_e} B^{\mathsf T} D\, B \; dV, \qquad K = \sum_e P_e^{\mathsf T} K_e\, P_e$$
+
+$B$ はひずみ-変位マトリクス、 $D$ は弾性マトリクス、 $P_e$ は局所→全体自由度のスキャッタ。
+CalculiX では $K_e$ を **`e_c3d.f`**（要素ルーチン）が、その全体組み立て（ $K$ を `ad`/`au` へ）を
+**`mafillsm.f`/`mafillsmmain.c`** が行う。**ここには手を触れていない**。改造は、組み上がった
+`ad`（対角）/`au`（下三角の非対角）/`icol`/`irow` を MatrixMarket（対称・下三角）で `K.mtx` に
+書き出すだけ。実コードの要点：
 
 ```c
 /* 対角 */
@@ -155,7 +163,7 @@ for(id_i=0;id_i<neqd;id_i++)
   }
 ```
 
-`nactdof.txt` も `(node, dir, eq)` で全節点分書き出す（Python が Point_A/Point_O の方程式を引くため）。
+`nactdof.txt` も `(node, dir, eq)` で全節点分書き出す（改造版が Point_A/Point_O の方程式番号を引くため）。
 
 ### 3.3 H の出力（**ソルバ内で自前計算**）
 
@@ -199,37 +207,70 @@ for(e=0; e<*ne; e++){                          /* 全要素ループ */
   組んだものをそのまま出し、H だけ「同じ物理式」を独立に組んで出している（DUMPW と同じ考え方）。
 - 制限：**C3D4・単一の等方材料**のみ（FrontISTR DUMPW と同じ範囲）。
 
-### 3.4 実行
+### 3.4 W（感度）を CalculiX 内部で解く（アジョイント法）
+
+`W = K^{-1} H` の測定点差
+
+$$W_{\text{diff}}[c,n] = (z_{A,c} - z_{O,c})^{\mathsf T} H[:,n], \qquad z_{P,c} = K^{-1} e_{\,\text{eq}(P,c)}$$
+
+を CalculiX の中で解く。Point_A/Point_O の各方向（x,y,z）に立てた単位ベクトル $e$ を右辺にして
+`K z = e` を解けばよく、必要な solve は**6 本（Point_O が固定なら 3 本）だけ**。CalculiX は
+SPOOLES を持つので、**K を 1 回因子分解して 3〜6 回 back-substitution** する（アジョイント法）。
+実コード（`linstatic.c` パッチ内）：
+
+```c
+/* K を因子分解（K.mtx は先に書き出し済み。ここで ad/au は分解で上書きされる） */
+spooles_factor(ad,au,adb,aub,&sigma,icol,irow,neq,nzs,&symmetryflag,&inputformat,&nzs[2]);
+for(cc=0;cc<3;cc++){               /* c = x,y,z */
+  if(eqA[cc]>0){                    /* Point_A の方程式に単位ベクトル */
+    for(rr=0;rr<neqd;rr++) bvec[rr]=0.0;  bvec[eqA[cc]-1]=1.0;
+    spooles_solve(bvec,neq);        /* bvec = z = K^-1 e （後退代入だけ） */
+    for(nn=0;nn<*nk;nn++){          /* Wdiff[c,n] += z^T H[:,n] */
+      s=0.0; for(rr=0;rr<neqd;rr++) s+=bvec[rr]*Hd[rr*(*nk)+nn];
+      Wd[cc*(*nk)+nn]+=s;
+    }
+  }
+  if(eqO[cc]>0){ /* Point_O が自由なら同様に引く。固定(<=0)なら寄与0 */ }
+}
+```
+
+Point_A / Point_O は **`sensitivity_points.dat`**（1 行 `19 103`、`#`/`!` はコメント）で指定し、
+`nactdof` で方程式番号に直す（node19 → eq 43,44,45）。**このファイルが無い／読めないと、
+必要なファイル名と書式を表示してエラー停止する**（FrontISTR DUMPW と同じ）。
+
+### 3.5 VTK 出力（CalculiX 内部）
+
+$W_{\text{diff}}$ （節点ごとの 3 成分）を、節点座標 `co` と C3D4 の連結 `kon`/`ipkon` を使って
+レガシー ASCII VTK（`VTK_TETRA`、ベクトル場 `Sensitivity`）で `sensitivity_Wdiff_ccx.vtk` に
+書き出す。`Wdiff_ccx.txt`（`node wx wy wz`）も同時に出す。
+
+### 3.6 実行（K・H・W・VTK を 1 回で）
 
 ```bash
 cd calculix/model/011_Tji_ccx
+export OMP_NUM_THREADS=4
 CCX_DUMPKH=1 $HOME/src/calculix_build/CalculiX/ccx_2.21/src/ccx_2.21 ccx_tji
-# -> K.mtx, H.mtx, nactdof.txt  （実行の最後に FORTRAN stop で終了：これは正常）
+# -> K.mtx, H.mtx, nactdof.txt, Wdiff_ccx.txt, sensitivity_Wdiff_ccx.vtk
+#    （最後に FORTRAN stop で終了：これは正常）
 ```
 
 `CCX_DUMPKH` を付けなければ通常の CalculiX（`ccx_tji.frd` を出す普通の解析）として動く。
+`sensitivity_points.dat` が無いと（上記のとおり）エラー停止する。
+
+> **まとめ**：K は CalculiX 標準の組み立て（`e_c3d.f` の要素剛性 → `mafillsm`）をそのまま出し、
+> H は同じ物理式を自前で組み、W は CalculiX の SPOOLES で解く。**K・H・W・VTK すべてが
+> 改造版 CalculiX の中で出る**（Python は使わない。参考用に `post/ccx_wdiff.py` も残してある）。
 
 ---
 
-## 4. W と VTK（後処理）
+## 4. W・VTK も Python でやる方法（参考）
 
-`W = K^-1 H` の測定点差 `Wdiff = W[Point_A] - W[Point_O]` を、**アジョイント法**で求めて
-VTK 化する。Point_O(103) は固定なので変位感度 0 → `Wdiff = W[Point_A]`。スクリプトは
-`calculix/post/ccx_wdiff.py`。
+`W`・VTK は 3.4/3.5 のとおり CalculiX 内部で出るが、`K.mtx`・`H.mtx`・`nactdof.txt` から
+Python でも同じものを作れる（結果一致）。通常は不要。
 
 ```bash
-cd calculix/model/011_Tji_ccx
 python3 ../../post/ccx_wdiff.py --workdir . --inp Quad4_FEM_Tji.inp
-# -> Wdiff_ccx.txt, sensitivity_Wdiff_ccx.vtk
 ```
-
-やっていること：`K.mtx`（対称）と `H.mtx`（active DOF）を読み、`nactdof.txt` から Point_A の
-方程式（x,y,z = 43,44,45）を引き、`z_c = K^-1 e_{eq_c}` を 3 本だけ解いて
-`Wdiff[c,n] = z_c^T H[:,n]`。VTK はベクトル場 `Sensitivity` として出す。
-
-> W の計算だけは Python（CalculiX の因子分解器を後処理から呼べないため）だが、K も H も
-> **CalculiX（改造版ソルバ）が出したもの**を使っている。FrontISTR 側でも 009 の比較では
-> W/VTK は Python だったので、そこは同じ立て付け。
 
 ---
 
@@ -247,6 +288,21 @@ python3 ../../post/ccx_wdiff.py --workdir . --inp Quad4_FEM_Tji.inp
 支配的な成分は一致し、分布はほぼ同一（相関 0.9995）。残る数 % は、**独立した 2 つの FEM
 コードの一次四面体（線形四面体）の実装差**によるもので、この要素特有の範囲内。
 **「CalculiX でも同じ K・H・W・VTK 出力ができる」ことは確認できた。**
+
+ParaView で見た感度 |W| の比較（左：FrontISTR DUMPH〔1 次〕、中：FrontISTR DUMPW〔1 次〕、
+右：**CalculiX**〔1 次〕。3 つとも同じ色スケール 4.7e-4）。分布はそっくり。
+
+![Python/FrontISTR/CalculiX の感度分布比較](../../docs/img/fi1python_fi1_cxx1.png)
+
+### 5.1 計算時間（4 並列 OMP=4、K・H・W・VTK すべてソルバ内）
+
+| ソルバ | 実測（wall, ×3） | 出力 |
+|---|---|---|
+| FrontISTR DUMPW | 約 `0.16 – 0.19 s` | K・H・W・VTK |
+| CalculiX DUMPKH | 約 `0.13 – 0.15 s` | K・H・W・VTK |
+
+同規模の 570 節点 C3D4 では両者ほぼ同じ（この例では CalculiX がわずかに速い）。どちらも
+「K を 1 回因子分解 → 数本の後退代入」なので、W の追加コストは小さい。
 
 ---
 

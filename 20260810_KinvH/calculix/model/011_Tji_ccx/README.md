@@ -15,11 +15,14 @@
 ## 実行
 
 ```bash
-# K・H・nactdof（改造版 ccx）
+# K・H・W・VTK を1回で（すべて CalculiX 内部で計算）
+export OMP_NUM_THREADS=4
 CCX_DUMPKH=1 $HOME/src/calculix_build/CalculiX/ccx_2.21/src/ccx_2.21 ccx_tji
-# W・VTK
-python3 ../../post/ccx_wdiff.py --workdir . --inp Quad4_FEM_Tji.inp
 ```
+
+- 測定点は `sensitivity_points.dat`（`19 103`）で指定。無いとエラーで停止する。
+- （参考）`python3 ../../post/ccx_wdiff.py --workdir . --inp Quad4_FEM_Tji.inp` でも
+  K・H から W・VTK を作れる（内部計算と一致。通常は不要）。
 
 ## 出力（gitには含めない：再実行で作れる）
 

@@ -1,6 +1,6 @@
 --- a/linstatic.c	2023-07-29 17:49:53.416409604 +0900
-+++ b/linstatic.c	2026-08-20 22:17:10.652029553 +0900
-@@ -460,6 +460,145 @@
++++ b/linstatic.c	2026-08-20 22:36:29.175635128 +0900
+@@ -460,6 +460,258 @@
  	       iponoel,inoel,&network,ntrans,inotr,trab,smscale,&mscalmethod,
  	       set,nset,islavelinv,autloc,irowtloc,jqtloc,&mortartrafoflag);
  
@@ -15,6 +15,29 @@
 +    double *t1u=NULL;
 +    long long nnzK=0,nnzH=0;
 +    FILE *fK,*fH,*fN,*fT;
++    int pa_i=0,po_i=0;
++
++    /* --- Point_A / Point_O are REQUIRED, read from sensitivity_points.dat.
++       If the file is missing or unreadable, print the file name and how to
++       write it, then stop with an error (like FrontISTR DUMPW). --- */
++    {
++      FILE *fp=fopen("sensitivity_points.dat","r"); char ln[256];
++      if(fp!=NULL){
++        while(fgets(ln,256,fp)!=NULL){
++          if(ln[0]=='#'||ln[0]=='!'||ln[0]=='\n') continue;
++          if(sscanf(ln,"%d %d",&pa_i,&po_i)==2) break;
++        }
++        fclose(fp);
++      }
++      if(pa_i<=0||po_i<=0){
++        printf(" CCX_DUMPKH ERROR: cannot read \"sensitivity_points.dat\".\n");
++        printf("   Put a file \"sensitivity_points.dat\" next to the input, with ONE line:\n");
++        printf("     <Point_A global node id> <Point_O global node id>\n");
++        printf("   (# or ! start a comment). Example:\n");
++        printf("       #Point_A, Point_O\n       19 103\n");
++        FORTRAN(stop,());
++      }
++    }
 +
 +    printf(" CCX_DUMPKH: exporting K.mtx, H.mtx, nactdof.txt (active DOFs=%ld)\n\n",
 +           (long)neqd);
@@ -134,8 +157,98 @@
 +          if(Hd[(size_t)p*(*nk)+q]!=0.0)
 +            fprintf(fH,"%ld %ld %.12e\n",(long)(p+1),(long)(q+1),Hd[(size_t)p*(*nk)+q]);
 +      fclose(fH);
-+      free(Hd);
 +      printf(" CCX_DUMPKH: E=%g nu=%g alpha=%g\n",Emod,nu,alpha);
++
++      /* ===== W (adjoint) + VTK, computed inside CalculiX =====
++         Factorize K with SPOOLES, solve the 3 adjoint problems K z = e for the
++         Point_A DOFs (and Point_O if free), then Wdiff[c,n] = (z_Ac - z_Oc)^T H[:,n].
++         Point_A / Point_O are read from sensitivity_points.dat ("pa po"). */
++#ifdef SPOOLES
++      {
++        ITG cc,rr,nn,eqA[3],eqO[3],ic4,jj;
++        double *bvec=NULL,*Wd=NULL,s;
++        FILE *fp;
++
++        if(pa_i>0){
++          for(cc=0;cc<3;cc++){
++            eqA[cc]=nactdof[mt*(pa_i-1)+(cc+1)];
++            eqO[cc]=(po_i>0)?nactdof[mt*(po_i-1)+(cc+1)]:0;
++          }
++          printf(" CCX_DUMPKH: Point_A=%d eqs %ld %ld %ld ; Point_O=%d\n",
++                 pa_i,(long)eqA[0],(long)eqA[1],(long)eqA[2],po_i);
++
++          /* factorize K (this overwrites ad/au, but K.mtx is already written) */
++          spooles_factor(ad,au,adb,aub,&sigma,icol,irow,neq,nzs,
++                         &symmetryflag,&inputformat,&nzs[2]);
++
++          bvec=(double *)malloc((size_t)neqd*sizeof(double));
++          Wd  =(double *)calloc((size_t)3*(*nk),sizeof(double));
++          for(cc=0;cc<3;cc++){
++            /* + K^-1 e_{Point_A dof c} */
++            if(eqA[cc]>0){
++              for(rr=0;rr<neqd;rr++) bvec[rr]=0.0;
++              bvec[eqA[cc]-1]=1.0;
++              spooles_solve(bvec,neq);
++              for(nn=0;nn<*nk;nn++){
++                s=0.0; for(rr=0;rr<neqd;rr++) s+=bvec[rr]*Hd[(size_t)rr*(*nk)+nn];
++                Wd[cc*(*nk)+nn]+=s;
++              }
++            }
++            /* - K^-1 e_{Point_O dof c} (fixed -> skip) */
++            if(eqO[cc]>0){
++              for(rr=0;rr<neqd;rr++) bvec[rr]=0.0;
++              bvec[eqO[cc]-1]=1.0;
++              spooles_solve(bvec,neq);
++              for(nn=0;nn<*nk;nn++){
++                s=0.0; for(rr=0;rr<neqd;rr++) s+=bvec[rr]*Hd[(size_t)rr*(*nk)+nn];
++                Wd[cc*(*nk)+nn]-=s;
++              }
++            }
++          }
++          spooles_cleanup();
++
++          /* Wdiff_ccx.txt */
++          fp=fopen("Wdiff_ccx.txt","w");
++          fprintf(fp,"# node_id  Wdiff_x  Wdiff_y  Wdiff_z\n");
++          for(nn=0;nn<*nk;nn++)
++            fprintf(fp,"%ld %.12e %.12e %.12e\n",(long)(nn+1),
++                    Wd[0*(*nk)+nn],Wd[1*(*nk)+nn],Wd[2*(*nk)+nn]);
++          fclose(fp);
++
++          /* sensitivity_Wdiff_ccx.vtk (legacy ASCII, VTK_TETRA) */
++          {
++            ITG nc4=0;
++            for(jj=0;jj<*ne;jj++) if(strcmp1(&lakon[8*jj],"C3D4")==0) nc4++;
++            fp=fopen("sensitivity_Wdiff_ccx.vtk","w");
++            fprintf(fp,"# vtk DataFile Version 2.0\n");
++            fprintf(fp,"CalculiX sensitivity Wdiff (Point_A - Point_O per unit nodal temperature)\n");
++            fprintf(fp,"ASCII\nDATASET UNSTRUCTURED_GRID\n");
++            fprintf(fp,"POINTS %ld double\n",(long)(*nk));
++            for(nn=0;nn<*nk;nn++)
++              fprintf(fp,"%.12e %.12e %.12e\n",co[3*nn],co[3*nn+1],co[3*nn+2]);
++            fprintf(fp,"CELLS %ld %ld\n",(long)nc4,(long)(5*nc4));
++            for(jj=0;jj<*ne;jj++){
++              if(strcmp1(&lakon[8*jj],"C3D4")!=0) continue;
++              fprintf(fp,"4 %ld %ld %ld %ld\n",
++                      (long)(kon[ipkon[jj]+0]-1),(long)(kon[ipkon[jj]+1]-1),
++                      (long)(kon[ipkon[jj]+2]-1),(long)(kon[ipkon[jj]+3]-1));
++            }
++            fprintf(fp,"CELL_TYPES %ld\n",(long)nc4);
++            for(ic4=0;ic4<nc4;ic4++) fprintf(fp,"10\n");
++            fprintf(fp,"POINT_DATA %ld\nVECTORS Sensitivity double\n",(long)(*nk));
++            for(nn=0;nn<*nk;nn++)
++              fprintf(fp,"%.12e %.12e %.12e\n",
++                      Wd[0*(*nk)+nn],Wd[1*(*nk)+nn],Wd[2*(*nk)+nn]);
++            fclose(fp);
++          }
++          free(bvec); free(Wd);
++          printf(" CCX_DUMPKH: wrote Wdiff_ccx.txt and sensitivity_Wdiff_ccx.vtk\n");
++        } else {
++          printf(" CCX_DUMPKH: sensitivity_points.dat not found -> skipped W/VTK\n");
++        }
++      }
++#endif
++      free(Hd);
 +    }
 +
 +    printf(" CCX_DUMPKH: wrote K.mtx (nnz=%lld), H.mtx (nnz=%lld), nactdof.txt\n\n",
