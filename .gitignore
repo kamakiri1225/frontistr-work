@@ -55,6 +55,8 @@ Thumbs.db
 nactdof.txt
 Wdiff_ccx.txt
 run_ccx.log
+run_noerr.log
+run_dumpkh.log
 ccx_*.dat
 ccx_*.sta
 spooles.out
