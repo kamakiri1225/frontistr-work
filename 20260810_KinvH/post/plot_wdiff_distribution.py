@@ -74,64 +74,78 @@ def project(xyz, azim, elev):
     return su, sv, depth
 
 
+def draw_panel(ax, nodes, ids, w, vmax, title):
+    """1パネルに |Wdiff| の塗り分けコンターを描く（vmax は色スケールの上限）。"""
+    cmap = cm.get_cmap('jet')
+    norm = Normalize(vmin=VMIN, vmax=vmax)
+    levels = np.linspace(VMIN, vmax, 25)
+    xyz = np.array([nodes[n] for n in ids])
+    mag = np.array([np.linalg.norm(w[n]) for n in ids])
+    su, sv, depth = project(xyz, AZIM, ELEV)
+    # 投影した点でドロネー三角形分割 -> 塗り分けコンター。T字の凹みを橋渡しする
+    # 細長い三角形は辺が長いのでマスクして除く。
+    tri = mtri.Triangulation(su, sv)
+    t = tri.triangles
+    d01 = np.hypot(su[t[:, 0]] - su[t[:, 1]], sv[t[:, 0]] - sv[t[:, 1]])
+    d12 = np.hypot(su[t[:, 1]] - su[t[:, 2]], sv[t[:, 1]] - sv[t[:, 2]])
+    d20 = np.hypot(su[t[:, 2]] - su[t[:, 0]], sv[t[:, 2]] - sv[t[:, 0]])
+    maxedge = np.maximum(np.maximum(d01, d12), d20)
+    tri.set_mask(maxedge > 2.5 * np.median(maxedge))
+    ax.tricontourf(tri, mag, levels=levels, cmap=cmap, norm=norm, extend='max')
+    for nid, mk in [(POINT_A, '^'), (POINT_O, 's')]:
+        if nid in nodes:
+            pu, pv, _ = project(np.array([nodes[nid]]), AZIM, ELEV)
+            ax.scatter(pu, pv, facecolors='none', edgecolors='k', marker=mk,
+                       s=140, linewidths=1.8, zorder=6,
+                       label=('Point_A(19)' if mk == '^' else 'Point_O(103)'))
+    ax.set_title(title, fontsize=9)
+    ax.set_aspect('equal'); ax.axis('off')
+    ax.legend(loc='lower right', fontsize=7, framealpha=0.9)
+    return norm, cmap
+
+
+def add_colorbar(fig, axes, norm, cmap, vmax):
+    sm = cm.ScalarMappable(norm=norm, cmap=cmap); sm.set_array([])
+    cb = fig.colorbar(sm, ax=axes, shrink=0.7, pad=0.01)
+    cb.set_label('|Wdiff|  (thermal sensitivity magnitude)')
+    cb.formatter.set_powerlimits((0, 0)); cb.update_ticks()
+
+
 def main():
     mesh341 = os.path.join(ROOT, 'model/011_Tji_DUMPW/FistrModel.msh')
     mesh342 = os.path.join(ROOT, 'model/012_Tji_DUMPW_342/FistrModel.msh')
     nodes341, ids341 = read_msh_nodes(mesh341)
     nodes342, ids342 = read_msh_nodes(mesh342)
+    w_py = wdiff_from_npy(os.path.join(ROOT, 'model/008_Tji_compare/Wdiff_python_tji.npy'), ids341)
+    w009 = wdiff_from_npy(os.path.join(ROOT, 'model/009_Tji_H_direct/Wdiff_fistr_tji.npy'), ids341)
+    w011 = wdiff_from_txt(os.path.join(ROOT, 'model/011_Tji_DUMPW/Wdiff_fistr.txt'))
+    w012 = wdiff_from_txt(os.path.join(ROOT, 'model/012_Tji_DUMPW_342/Wdiff_fistr.txt'))
 
-    panels = [
-        ('Python (pure-Python H)', nodes341, ids341,
-         wdiff_from_npy(os.path.join(ROOT, 'model/008_Tji_compare/Wdiff_python_tji.npy'), ids341), 26),
-        ('FrontISTR 009 (DUMPH + Python adjoint, 341)', nodes341, ids341,
-         wdiff_from_npy(os.path.join(ROOT, 'model/009_Tji_H_direct/Wdiff_fistr_tji.npy'), ids341), 26),
-        ('FrontISTR 011 (DUMPW internal, 341)', nodes341, ids341,
-         wdiff_from_txt(os.path.join(ROOT, 'model/011_Tji_DUMPW/Wdiff_fistr.txt')), 26),
-        ('FrontISTR 012 (DUMPW internal, 342)', nodes342, ids342,
-         wdiff_from_txt(os.path.join(ROOT, "model/012_Tji_DUMPW_342/Wdiff_fistr.txt")), 16),
-    ]
-
-    norm = Normalize(vmin=VMIN, vmax=VMAX)
-    cmap = cm.get_cmap('jet')
-    levels = np.linspace(VMIN, VMAX, 25)
-
+    # --- 図1: Python / 009 / 011 / 012 を同じ色スケール(VMAX)で ---
+    panels = [('Python (pure-Python H)', nodes341, ids341, w_py),
+              ('FrontISTR 009 (DUMPH + Python adjoint, 341)', nodes341, ids341, w009),
+              ('FrontISTR 011 (DUMPW internal, 341)', nodes341, ids341, w011),
+              ('FrontISTR 012 (DUMPW internal, 342)', nodes342, ids342, w012)]
     fig, axes = plt.subplots(1, 4, figsize=(20, 6.2))
-    for ax, (title, nodes, ids, w, msize) in zip(axes, panels):
-        xyz = np.array([nodes[n] for n in ids])
-        mag = np.array([np.linalg.norm(w[n]) for n in ids])
-        su, sv, depth = project(xyz, AZIM, ELEV)
-
-        # 投影した点でドロネー三角形分割し、塗り分けコンター(tricontourf)にする。
-        # T字形の凹み(くびれ)を橋渡しする細長い三角形は、辺が長いのでマスクして除く。
-        tri = mtri.Triangulation(su, sv)
-        t = tri.triangles
-        d01 = np.hypot(su[t[:, 0]] - su[t[:, 1]], sv[t[:, 0]] - sv[t[:, 1]])
-        d12 = np.hypot(su[t[:, 1]] - su[t[:, 2]], sv[t[:, 1]] - sv[t[:, 2]])
-        d20 = np.hypot(su[t[:, 2]] - su[t[:, 0]], sv[t[:, 2]] - sv[t[:, 0]])
-        maxedge = np.maximum(np.maximum(d01, d12), d20)
-        tri.set_mask(maxedge > 2.5 * np.median(maxedge))
-
-        ax.tricontourf(tri, mag, levels=levels, cmap=cmap, norm=norm, extend='max')
-        # Point_A / Point_O を印
-        for nid, mk, lab in [(POINT_A, '^', 'Point_A(19)'), (POINT_O, 's', 'Point_O(103)')]:
-            if nid in nodes:
-                pu, pv, _ = project(np.array([nodes[nid]]), AZIM, ELEV)
-                ax.scatter(pu, pv, facecolors='none', edgecolors='k', marker=mk,
-                           s=140, linewidths=1.8, zorder=6, label=lab)
-        ax.set_title(title, fontsize=9)
-        ax.set_aspect('equal'); ax.axis('off')
-        ax.legend(loc='lower right', fontsize=7, framealpha=0.9)
-
-    sm = cm.ScalarMappable(norm=norm, cmap=cmap); sm.set_array([])
-    cb = fig.colorbar(sm, ax=axes, shrink=0.7, pad=0.01,
-                      ticks=[VMIN, 1e-4, 2e-4, 3e-4, 4e-4, VMAX])
-    cb.set_label('|Wdiff|  (thermal sensitivity magnitude)')
-    cb.ax.set_yticklabels(['1.4e-7', '1e-4', '2e-4', '3e-4', '4e-4', '4.7e-4'])
+    for ax, (title, nodes, ids, w) in zip(axes, panels):
+        norm, cmap = draw_panel(ax, nodes, ids, w, VMAX, title)
+    add_colorbar(fig, axes, norm, cmap, VMAX)
     fig.suptitle('Thermal sensitivity |Wdiff| : Python vs FrontISTR (009 / 011 / 012)   '
-                 '[isometric view, Z up ; Point_A=19, Point_O=103]', fontsize=12)
-    out = os.path.join(ROOT, 'docs/img/dumpw_wdiff_python_009_011_012.png')
-    fig.savefig(out, dpi=120, bbox_inches='tight')
-    print('saved', out)
+                 '[same color scale, max=4.7e-4 ; isometric view]', fontsize=12)
+    out1 = os.path.join(ROOT, 'docs/img/dumpw_wdiff_python_009_011_012.png')
+    fig.savefig(out1, dpi=120, bbox_inches='tight'); print('saved', out1)
+
+    # --- 図2: 342だけ、色スケール上限を 4.7e-4（左）と その0.5倍=2.35e-4（右）で比較 ---
+    fig2, axes2 = plt.subplots(1, 2, figsize=(11, 6.2))
+    n1, c1 = draw_panel(axes2[0], nodes342, ids342, w012, VMAX,
+                        'FrontISTR 012 (342)  contour max = 4.7e-4  (same as fig.1)')
+    add_colorbar(fig2, axes2[0], n1, c1, VMAX)
+    n2, c2 = draw_panel(axes2[1], nodes342, ids342, w012, 0.5 * VMAX,
+                        'FrontISTR 012 (342)  contour max = 2.35e-4  (0.5x)')
+    add_colorbar(fig2, axes2[1], n2, c2, 0.5 * VMAX)
+    fig2.suptitle('2nd-order (342): contour max 4.7e-4 vs half (0.5x) 2.35e-4', fontsize=12)
+    out2 = os.path.join(ROOT, 'docs/img/dumpw_wdiff_342_halfscale.png')
+    fig2.savefig(out2, dpi=120, bbox_inches='tight'); print('saved', out2)
 
 
 if __name__ == '__main__':
