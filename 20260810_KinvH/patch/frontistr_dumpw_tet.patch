@@ -1,8 +1,8 @@
 diff --git a/fistr1/src/analysis/static/fstr_ass_load.f90 b/fistr1/src/analysis/static/fstr_ass_load.f90
-index 6a3c9754..62fa7add 100644
+index 6a3c9754..c51fa14b 100644
 --- a/fistr1/src/analysis/static/fstr_ass_load.f90
 +++ b/fistr1/src/analysis/static/fstr_ass_load.f90
-@@ -547,7 +547,353 @@ contains
+@@ -547,7 +547,372 @@ contains
      do j = 1, ndof*nn
        B(iwk(j)) = B(iwk(j)) + vect(j)
      enddo
@@ -10,6 +10,21 @@ index 6a3c9754..62fa7add 100644
 +
    end subroutine calculate_thermal_load
  
++  !> DUMPW helper: print (to both FSTR.msg and stdout) the required file name
++  !> and how to write it, so the user sees it in the log.
++  subroutine fstr_sensitivity_points_help()
++    write(IMSG,'(A)') ' DUMPW: the file "sensitivity_points.dat" is REQUIRED in the run directory.'
++    write(IMSG,'(A)') '        Write ONE line with two global node ids: <Point_A> <Point_O>'
++    write(IMSG,'(A)') '        (# or ! start a comment line). Example:'
++    write(IMSG,'(A)') '          #Point_A, Point_O'
++    write(IMSG,'(A)') '          19 103'
++    write(*,'(A)') ' DUMPW: the file "sensitivity_points.dat" is REQUIRED in the run directory.'
++    write(*,'(A)') '        Write ONE line with two global node ids: <Point_A> <Point_O>'
++    write(*,'(A)') '        (# or ! start a comment line). Example:'
++    write(*,'(A)') '          #Point_A, Point_O'
++    write(*,'(A)') '          19 103'
++  end subroutine fstr_sensitivity_points_help
++
 +  !======================================================================!
 +  !> DUMPW helper: read Point_A / Point_O global node ids from the text file
 +  !> 'sensitivity_points.dat' (one line: "<Point_A global id> <Point_O global id>")
@@ -34,9 +49,9 @@ index 6a3c9754..62fa7add 100644
 +
 +    open(iunit, file='sensitivity_points.dat', status='old', action='read', iostat=stat)
 +    if (stat /= 0) then
-+      write(IMSG,*) 'DUMPW: cannot open sensitivity_points.dat', &
-+        ' (a line "<Point_A global node id> <Point_O global node id>";', &
-+        ' lines starting with # are comments)'
++      write(IMSG,'(A)') ' DUMPW ERROR: cannot find/open "sensitivity_points.dat".'
++      write(*,'(A)')    ' DUMPW ERROR: cannot find/open "sensitivity_points.dat".'
++      call fstr_sensitivity_points_help()
 +      return
 +    endif
 +    ! read the first non-comment, non-blank line; "#" and "!" start a comment
@@ -52,7 +67,9 @@ index 6a3c9754..62fa7add 100644
 +    enddo
 +    close(iunit)
 +    if (stat /= 0 .or. ga == 0 .or. go == 0) then
-+      write(IMSG,*) 'DUMPW: failed to read two node ids from sensitivity_points.dat'
++      write(IMSG,'(A)') ' DUMPW ERROR: could not read two node ids from "sensitivity_points.dat".'
++      write(*,'(A)')    ' DUMPW ERROR: could not read two node ids from "sensitivity_points.dat".'
++      call fstr_sensitivity_points_help()
 +      return
 +    endif
 +
@@ -61,7 +78,9 @@ index 6a3c9754..62fa7add 100644
 +      if (hecMESH%global_node_ID(i) == go) no_local = i
 +    enddo
 +    if (na_local == 0 .or. no_local == 0) then
-+      write(IMSG,*) 'DUMPW: Point_A or Point_O global node id not found:', ga, go
++      write(IMSG,*) ' DUMPW ERROR: Point_A or Point_O global node id not found in mesh:', ga, go
++      write(*,*)    ' DUMPW ERROR: Point_A or Point_O global node id not found in mesh:', ga, go
++      call fstr_sensitivity_points_help()
 +      return
 +    endif
 +
@@ -277,9 +296,12 @@ index 6a3c9754..62fa7add 100644
 +  !> DUMPW: write the sensitivity field Wdiff(3, n_node) as a legacy ASCII
 +  !> VTK unstructured grid, openable directly in ParaView.
 +  !> First-order tetrahedra (341) are written as VTK_TETRA (type 10);
-+  !> second-order tetrahedra (342) as VTK_QUADRATIC_TETRA (type 24), with
-+  !> the mid-edge nodes reordered by tbl342 to match VTK's node convention
-+  !> (the same permutation FrontISTR's own VTK writer uses).
++  !> second-order tetrahedra (342) as VTK_QUADRATIC_TETRA (type 24).
++  !> NOTE: inside the solver, hecMESH%elem_node_item for a 342 element is already
++  !> in the shape-function node order (nodes 5..10 = mid(1,2),(2,3),(3,1),(1,4),
++  !> (2,4),(3,4)), which is exactly the VTK_QUADRATIC_TETRA order, so NO
++  !> reordering is needed here (identity). (FrontISTR's own C VTK writer applies
++  !> table342 because it reads the raw mesh-file order instead.)
 +  !======================================================================!
 +  subroutine fstr_sensitivity_write_vtk(hecMESH, fstrSOLID, Wdiff, n_elem_solid)
 +    type(hecmwST_local_mesh), intent(in) :: hecMESH
@@ -288,9 +310,6 @@ index 6a3c9754..62fa7add 100644
 +    integer(kind=kint), intent(in)       :: n_elem_solid
 +
 +    integer(kind=kint), parameter :: iunit = 211
-+    ! FrontISTR local index -> VTK_QUADRATIC_TETRA position
-+    ! (1-based form of table342 = {0,1,2,3,6,4,5,7,8,9} in hecmw_fstr_output_vtk.c)
-+    integer(kind=kint), parameter :: tbl342(10) = (/1,2,3,4,7,5,6,8,9,10/)
 +    integer(kind=kint) :: icel, is, j, i, stat, ic_type, nn, cell_list_size
 +    integer(kind=kint) :: nodLocal(10)
 +
@@ -331,8 +350,8 @@ index 6a3c9754..62fa7add 100644
 +      enddo
 +      if (nn == 4) then
 +        write(iunit,"(I0,4(' ',I0))") 4, (nodLocal(j)-1, j=1,4)
-+      else   ! nn == 10 : reorder mid-edge nodes to VTK convention
-+        write(iunit,"(I0,10(' ',I0))") 10, (nodLocal(tbl342(j))-1, j=1,10)
++      else   ! nn == 10 : elem_node_item is already in VTK_QUADRATIC_TETRA order
++        write(iunit,"(I0,10(' ',I0))") 10, (nodLocal(j)-1, j=1,10)
 +      endif
 +    enddo
 +
@@ -358,7 +377,7 @@ index 6a3c9754..62fa7add 100644
 +
  end module m_fstr_ass_load
 diff --git a/fistr1/src/analysis/static/fstr_solve_NonLinear.f90 b/fistr1/src/analysis/static/fstr_solve_NonLinear.f90
-index 83444b81..131c3e93 100644
+index 83444b81..aa906daf 100644
 --- a/fistr1/src/analysis/static/fstr_solve_NonLinear.f90
 +++ b/fistr1/src/analysis/static/fstr_solve_NonLinear.f90
 @@ -227,6 +227,13 @@ contains
@@ -375,7 +394,7 @@ index 83444b81..131c3e93 100644
      call fstr_UpdateState( hecMESH, fstrSOLID, tincr )
      !    Update REACTION using current QFORCE
      call fstr_Update_REACTION_SPC( cstep, hecMESH, fstrSOLID )
-@@ -237,6 +244,96 @@ contains
+@@ -237,6 +244,101 @@ contains
      call hecmw_mpc_mat_finalize(hecMESH, hecMAT, hecMESHmpc, hecMATmpc)
    end subroutine fstr_Newton
  
@@ -406,8 +425,13 @@ index 83444b81..131c3e93 100644
 +
 +    call fstr_sensitivity_read_dofs(hecMESH, dof6, na_local, no_local, ok)
 +    if (.not. ok) then
-+      write(IMSG,*) 'DUMPW: skipped (sensitivity_points.dat missing or invalid).'
-+      return
++      ! sensitivity_points.dat is missing or invalid: stop the run with an error
++      ! (fstr_sensitivity_read_dofs has already printed the file name and how to write it).
++      ! Use "error stop" so the process exits with a non-zero status. DUMPW is
++      ! single-domain only, so this cannot leave other MPI ranks hanging.
++      write(IMSG,*) ' DUMPW ERROR: aborting because sensitivity_points.dat is missing or invalid.'
++      write(*,*)    ' DUMPW ERROR: aborting because sensitivity_points.dat is missing or invalid.'
++      error stop 1
 +    endif
 +
 +    ntot = hecMESH%n_node*ndof

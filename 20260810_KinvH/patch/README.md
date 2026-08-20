@@ -321,10 +321,12 @@ $W_{\text{diff}}$（$3 \times n_{\text{node}}$）を、レガシーASCII形式�
 （Unstructured Grid、`VECTORS Sensitivity`）で書き出す。要素タイプでセルの書き方を変える。
 
 - 341 … `VTK_TETRA`（セル型`10`）、4節点そのまま
-- 342 … `VTK_QUADRATIC_TETRA`（セル型`24`）、10節点。中間節点はFrontISTR公式の
-  VTK出力（`hecmw_fstr_output_vtk.c` の `table342`）と同じ順（`tbl342=(/1,2,3,4,7,5,6,8,9,10/)`）に
-  並べ替える。$K$・$H$・$W$ の計算のほうは `elem_node_item` をそのまま `TLOAD_C3` に渡すだけなので、
-  この並べ替えは**VTKの見た目のためだけ**に必要。
+- 342 … `VTK_QUADRATIC_TETRA`（セル型`24`）、10節点**そのまま（並べ替え不要）**。
+  ソルバー内部の `elem_node_item` は342要素で既に形状関数の節点順（節点5〜10 = 辺
+  (1,2),(2,3),(3,1),(1,4),(2,4),(3,4)の中点）になっていて、これが `VTK_QUADRATIC_TETRA` の
+  期待する順と同じだから。FrontISTR標準のC言語VTK出力（`hecmw_fstr_output_vtk.c` の `table342`）は
+  メッシュファイルの生の順を読むので並べ替えているが、DUMPWはソルバー内部の順を書くので恒等でよい
+  （出力VTKの全要素で「中間節点＝正しい辺の中点」を検証済み、最大ずれ 1e-9）。
 
 ## 使い方（最短）
 
@@ -335,7 +337,13 @@ $W_{\text{diff}}$（$3 \times n_{\text{node}}$）を、レガシーASCII形式�
 - `METHOD=DIRECT` … 直接法。因子分解を6回の後退代入で使い回すために必要。
 - `DUMPTYPE=MM` … $K$ も同時に出す（`dump_matrix_1_0.mm`）。K・H・W・VTKの4つがそろう。
 - `DUMPEXIT=YES`は**付けない**（実際に解いて因子分解を作る必要があるため）。
-- 実行フォルダに`sensitivity_points.dat`（例：`19 103`）を置く。
+- 実行フォルダに`sensitivity_points.dat`を置く（`#`/`!` はコメント）。例：
+  ```text
+  #Point_A, Point_O
+  19 103
+  ```
+  **このファイルが無い／読めないと、DUMPWはエラーで停止する**（終了コード非0）。そのとき
+  `FSTR.msg` と標準出力に、必要なファイル名と書き方（上の例）が出る。
 
 適用範囲は`DUMPH`と同じく3次元ソリッド・線形静解析・単一領域で、要素は**四面体一次`341`
 および二次`342`**に対応する。二次要素メッシュは `post/convert_341_to_342.py` で一次メッシュから

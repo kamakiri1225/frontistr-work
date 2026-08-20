@@ -175,7 +175,20 @@ $HOME/src/FrontISTR-dumpw/build-dumpw/fistr1/fistr1
 `sensitivity_points.dat` の中身（この例）：
 
 ```text
+#Point_A, Point_O
 19 103
+```
+
+`#` や `!` で始まる行はコメント。**このファイルが無い／読めないと、DUMPWはエラーで停止する**
+（終了コード非0）。そのとき `FSTR.msg` と標準出力に、必要なファイル名と書き方の例が出る。
+
+```text
+DUMPW ERROR: cannot find/open "sensitivity_points.dat".
+DUMPW: the file "sensitivity_points.dat" is REQUIRED in the run directory.
+       Write ONE line with two global node ids: <Point_A> <Point_O>
+       (# or ! start a comment line). Example:
+         #Point_A, Point_O
+         19 103
 ```
 
 ### 5.2 実行
