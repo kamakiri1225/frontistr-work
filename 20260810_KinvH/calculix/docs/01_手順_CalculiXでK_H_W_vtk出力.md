@@ -70,6 +70,27 @@ make              # -> ccx_2.21 （実行ファイル、数分）
 `ccx_2.21` ができれば OK。まず**素のまま**でモデルが解けることを確認した（次章の入力で
 `$HOME/src/calculix_build/CalculiX/ccx_2.21/src/ccx_2.21 ccx_tji` → `ccx_tji.frd` が出る）。
 
+### 1.4 DUMPKH 改造を当てて再ビルド
+
+素のビルドが通ったら、`linstatic.c` への K・H・W・VTK 出力処理（第3章）を当てて `make` し直す。
+ccx のソースは tarball 展開（git 管理下ではない）なので、次の (a) `patch` か (b) コピーで当てる。
+
+```bash
+cd $HOME/src/calculix_build/CalculiX/ccx_2.21/src
+R=/mnt/d/work/002_CAE/frontistr/work/20260810_KinvH/calculix/patch
+
+# (a) パッチ（差分）を当てる
+patch -p1 < $R/ccx_2.21_dumpkh.patch          # linstatic.c にあたる
+
+# (b) 改造ソース（実ファイル）を元の位置にコピーして当てる（パッチの代わり）
+cp $R/modified_src/ccx_2.21/src/linstatic.c .
+cp $R/modified_src/ccx_2.21/src/Makefile .    # ビルドフラグも一緒に入る
+
+make                                          # -> 改造版 ccx_2.21
+```
+
+（1.3 の Makefile 変更を手で入れていない場合は、(b) の `Makefile` コピーがそれも兼ねる。）
+
 ---
 
 ## 2. 入力デック（CalculiX 形式）
