@@ -28,8 +28,23 @@ DUMPW 改造で**実際に書き換えた FrontISTR のソースファイル**�
 cd $HOME/src/FrontISTR              # クリーンな FrontISTR 5.9
 git apply /path/to/frontistr/patch/frontistr_dumpw_tet.patch
 
-# (B) ここのファイルで上書きする
+# (B) ここのファイルで上書きする（cp -r は「マージ」。フォルダごと消えたりしない）
 cp -r frontistr/patch/modified_src/fistr1 $HOME/src/FrontISTR/
+```
+
+> **`cp -r fistr1 …/` はフォルダを丸ごと置き換えない**。`cp -r` は**マージ**で、
+> `modified_src/fistr1` に入っている**上表の5ファイルだけ**を同じ位置で上書きし、
+> 元の `fistr1/` の他のファイルはそのまま残る（削除もされない）。心配なら次のように
+> **ファイルを1つずつ**コピーしても同じ（こちらの方が「どれを上書きするか」が明確）：
+
+```bash
+D=$HOME/src/FrontISTR                    # 上書き先（クリーンな 5.9）
+S=frontistr/patch/modified_src
+cp $S/fistr1/src/analysis/static/fstr_ass_load.f90        $D/fistr1/src/analysis/static/
+cp $S/fistr1/src/analysis/static/fstr_solve_NonLinear.f90 $D/fistr1/src/analysis/static/
+cp $S/fistr1/src/common/fstr_ctrl_common.f90              $D/fistr1/src/common/
+cp $S/fistr1/src/common/fstr_setup.f90                    $D/fistr1/src/common/
+cp $S/fistr1/src/lib/m_fstr.F90                           $D/fistr1/src/lib/
 ```
 
 ビルド手順は `frontistr/docs/13`・`frontistr/docs/14` を参照。

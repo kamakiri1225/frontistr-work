@@ -124,7 +124,7 @@ git worktree add $HOME/src/FrontISTR-dumpw 7f48eae0
 cd $HOME/src/FrontISTR-dumpw
 # (2a) パッチ（差分）を当てる
 git apply /mnt/d/work/002_CAE/frontistr/work/20260810_KinvH/frontistr/patch/frontistr_dumpw_tet.patch
-# (2b) 改造ソース（実ファイル）を元の位置にコピーして当てる（パッチの代わり）
+# (2b) 改造ソースを元の位置にコピーして当てる（cp -r はマージ＝該当5ファイルだけ上書き、他は残る）
 cp -r /mnt/d/work/002_CAE/frontistr/work/20260810_KinvH/frontistr/patch/modified_src/fistr1 $HOME/src/FrontISTR-dumpw/
 
 # (3) 別ビルドフォルダ build-dumpw で設定する（DUMPHのときと同じオプション）
