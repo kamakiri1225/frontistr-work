@@ -1,0 +1,28 @@
+================================================================================
+
+  README of FrontISTR on HEC-MW (in English)
+
+  FrontISTR Commons
+
+  Comments, Questions, Problems etc.
+    e-mail: support@frontistr.com
+
+================================================================================
+
+(1) Programs in this archive
+  - FrontISTR structural analysis program
+
+(2) Files in this directory
+  README                      : README (in English : this file)
+  README.ja                   : README (in Japanese)
+  setup_fistr.sh              : shell script to create makefiles
+  Makefile.am                 : base file of makefile for installation
+  Makefile.dev                : setting file for developers
+
+  src/                        : source codes
+
+  tools/                      : various tools
+
+************************************ NOTICE *************************************
+Please read "License.txt" carefully BEFORE you start to use this software.
+*********************************************************************************

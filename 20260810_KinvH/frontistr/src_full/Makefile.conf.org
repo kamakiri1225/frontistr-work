@@ -1,0 +1,87 @@
+##################################################
+#                                                #
+#     Setup Configuration File for FrontISTR     #
+#                                                #
+##################################################
+
+# MPI
+MPIDIR         =
+MPIBINDIR      =
+MPILIBDIR      =
+MPIINCDIR      =
+MPILIBS        =
+
+# for install option only
+PREFIX         = $(HOME)/FrontISTR
+BINDIR         = $(PREFIX)/bin
+LIBDIR         = $(PREFIX)/lib
+INCLUDEDIR     = $(PREFIX)/include
+
+# Metis
+METISDIR       = $(HOME)/Metis-4.0
+METISLIBDIR    = $(METISDIR)
+METISINCDIR    = $(METISDIR)/Lib
+HECMW_METIS_VER= 4
+
+# ParMetis
+PARMETISDIR    = $(HOME)/ParMetis-3.1
+PARMETISLIBDIR = $(PARMETISDIR)
+PARMETISINCDIR = $(PARMETISDIR)/ParMETISLib
+
+# Refiner
+REFINERDIR     = $(HOME)/REVOCAP_Refiner
+REFINERINCDIR  = $(REFINERDIR)/Refiner
+REFINERLIBDIR  = $(REFINERDIR)/lib
+
+# Coupler
+REVOCAPDIR     = $(HOME)/REVOCAP_Coupler
+REVOCAPINCDIR  = $(REVOCAPDIR)/librcap
+REVOCAPLIBDIR  = $(REVOCAPDIR)/librcap
+
+# MUMPS
+MUMPSDIR       = $(HOME)/MUMPS_4.10.0
+MUMPSINCDIR    = $(MUMPSDIR)/include
+MUMPSLIBDIR    = $(MUMPSDIR)/lib
+
+# NetCDF (for Exodus II output)
+NETCDFDIR      =
+NETCDFINCDIR   = $(NETCDFDIR)/include
+NETCDFLIBDIR   = $(NETCDFDIR)/lib
+NETCDFLIBS     = -lnetcdf
+
+# MKL PARDISO
+MKLDIR     = $(HOME)/
+MKLINCDIR  = $(MKLDIR)/include
+MKLLIBDIR  = $(MKLDIR)/lib
+
+# ML
+MLDIR          = $(HOME)/trilinos/11.8.1/ml
+MLINCDIR       = $(MLDIR)/include
+MLLIBDIR       = $(MLDIR)/lib
+
+# C compiler settings
+CC             = mpicc
+CFLAGS         =
+LDFLAGS        = -lm
+OPTFLAGS       = -O3
+
+# C++ compiler settings
+CPP            = mpic++
+CPPFLAGS       =
+CPPLDFLAGS     =
+CPPOPTFLAGS    = -O3
+
+# Fortran compiler settings
+F90            = mpif90
+F90FLAGS       =
+F90LDFLAGS     =
+F90OPTFLAGS    = -O2
+F90FPP         = -cpp
+F90LINKER      = mpif90
+
+MAKE           = make
+AR             = ar ruv
+MV             = mv -f
+CP             = cp -f
+RM             = rm -f
+MKDIR          = mkdir -p

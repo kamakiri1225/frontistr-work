@@ -8,12 +8,14 @@
 ├── frontistr/        ← FrontISTR 版（DUMPH / DUMPW 改造）
 │   ├── model/            解析モデル（001〜012。011=一次, 012=二次 四面体）
 │   ├── patch/            改造パッチ（*.patch）＋ modified_src/（改造したソース実ファイル）＋ README
+│   ├── src_full/         カスタマイズ済み FrontISTR 5.9 ソース一式（パッチ不要でそのままビルド可）
 │   ├── post/             Python 後処理（アジョイント W、VTK、341→342 変換 など）
 │   ├── docs/             手順・解説（00_目次 〜 14、img/）
 │   └── sample/           元の感度解析サンプル
 └── calculix/         ← CalculiX 版（ccx を改造して K・H・W・VTK を出力）
     ├── model/011_Tji_ccx/   CalculiX 入力デックと出力
     ├── patch/               ccx_2.21_dumpkh.patch ＋ modified_src/（改造した linstatic.c 等）
+    ├── src_full/            カスタマイズ済み ccx 2.21 ソース一式（そのままビルド可、SPOOLESは別途）
     ├── post/                （参考）Python 後処理
     └── docs/01_...          導入・改造・実行・結果の手順書
 ```
